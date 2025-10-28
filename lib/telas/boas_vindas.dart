@@ -9,8 +9,7 @@ class WelcomeScreen extends StatelessWidget {
 
   // Função que será chamada ao clicar no botão 'Iniciar'
   void _iniciar(BuildContext context) {
-    // Por enquanto, apenas para testes, imprime no console.
-    debugPrint('Botão Iniciar Pressionado!');
+    Navigator.pushReplacementNamed(context, '/inicio');
   }
 
   @override

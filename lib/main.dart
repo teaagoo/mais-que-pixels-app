@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meu_primeiro_app/telas/boas_vindas.dart'; 
+import 'package:meu_primeiro_app/telas/tela_principal.dart';
 
 void main() {
   // Inicia o aplicativo, executando o widget raiz MyApp
@@ -25,6 +26,9 @@ class MyApp extends StatelessWidget {
       ),
       // O 'home' aponta para o widget que foi importado do arquivo 'boas_vindas.dart'
       home: const WelcomeScreen(), // Assume que a classe dentro do arquivo é WelcomeScreen
+      routes: {
+        '/inicio': (context) => const TelaPrincipal(), // Rota para a tela principal
+      }
     );
   }
 }
