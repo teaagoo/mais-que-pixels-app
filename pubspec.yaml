@@ -64,6 +64,11 @@ flutter:
     - assets/header_tela_inicial.png
     - assets/perfil_analu.png
     - assets/fonts/
+    - assets/illustrations/gentileza_missao.png
+    - assets/illustrations/coragem_missao.png
+    - assets/illustrations/criatividade_missao.png
+    - assets/illustrations/zen_missao.png
+    - assets/illustrations/missao_concluida.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
