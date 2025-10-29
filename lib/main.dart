@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:meu_primeiro_app/controles/bd.dart';
 import 'package:meu_primeiro_app/telas/boas_vindas.dart';
 import 'package:meu_primeiro_app/telas/tela_principal.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SqfliteController().initDB();
   runApp(const MyApp());
 }
 
