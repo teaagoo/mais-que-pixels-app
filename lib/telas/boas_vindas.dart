@@ -7,93 +7,97 @@ import 'package:flutter/material.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
-  // Função que será chamada ao clicar no botão 'Iniciar'
   void _iniciar(BuildContext context) {
     Navigator.pushReplacementNamed(context, '/inicio');
   }
 
   @override
   Widget build(BuildContext context) {
-    // Scaffold é o esqueleto da tela
+    final theme = Theme.of(context);
+
     return Scaffold(
       body: Stack(
-        children: <Widget>[
+        children: [
           // -------------------------------------------
-          // 1. BACKGROUND COMPLETO (PRIMEIRO ELEMENTO = FUNDO)
+          // 1. BACKGROUND COMPLETO
           // -------------------------------------------
           Positioned.fill(
             child: Image.asset(
-              'assets/ilustracao_boas_vindas.png', 
-              fit: BoxFit.cover, 
+              'assets/ilustracao_boas_vindas.png',
+              fit: BoxFit.cover,
             ),
           ),
 
           // -------------------------------------------
-          // 2. CONTEÚDO PRINCIPAL (SEGUNDO ELEMENTO = TOPO)
+          // 2. CONTEÚDO PRINCIPAL
           // -------------------------------------------
-          SafeArea( 
+          SafeArea(
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start, 
+                  mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.center,
-                  children: <Widget>[
-                    // Espaço do topo
-                    const SizedBox(height: 100), 
+                  children: [
+                    const SizedBox(height: 120),
 
-                    // Título
-                    const Text(
+                    // -------------------------------------------
+                    // TÍTULO
+                    // -------------------------------------------
+                    Text(
                       'Mais que\nPixels',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.displayLarge?.copyWith(
+                        fontFamily: 'MochiyPopPOne',
                         fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black, 
-                        height: 1.1, 
+                        color: Colors.black,
+                        height: 1.1,
                       ),
                     ),
-                    
-                    // Espaço
-                    const SizedBox(height: 10),
 
-                    // Slogan
-                    const Text(
-                      'Viva fora da tela, um\ndesafio por vez.',
+                    const SizedBox(height: 12),
+
+                    // -------------------------------------------
+                    // SLOGAN
+                    // -------------------------------------------
+                    Text(
+                      'Viva fora da tela,\num desafio por vez.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        fontFamily: 'Lato',
                         fontSize: 18,
-                        color: Colors.black87, 
+                        color: Colors.black87,
+                        height: 1.4,
                       ),
                     ),
 
-                    // Usa um 'Spacer' para empurrar o botão para o fundo da tela.
-                    const Spacer(), 
+                    const Spacer(),
 
-                    // Botão 'Iniciar'
+                    // -------------------------------------------
+                    // BOTÃO 'INICIAR'
+                    // -------------------------------------------
                     ElevatedButton(
-                      // ALTERAÇÃO CRUCIAL: Passa o 'context' ao chamar a função
-                      onPressed: () => _iniciar(context), 
+                      onPressed: () => _iniciar(context),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6B8E4C), 
-                        foregroundColor: Colors.white, 
-                        minimumSize: const Size(200, 65), 
+                        backgroundColor: const Color(0xFF6B8E4C),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(220, 65),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30), 
+                          borderRadius: BorderRadius.circular(35),
                         ),
-                        elevation: 5, 
+                        elevation: 6,
                       ),
                       child: const Text(
                         'Iniciar',
                         style: TextStyle(
-                          fontSize: 25, 
-                          fontWeight: FontWeight.w700
+                          fontFamily: 'MochiyPopPOne',
+                          fontSize: 26,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
-                    
-                    // Espaço na parte inferior, abaixo do botão
-                    const SizedBox(height: 350), 
+
+                    const SizedBox(height: 300),
                   ],
                 ),
               ),

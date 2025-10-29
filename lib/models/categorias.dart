@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-// Esta classe define a estrutura de dados para cada item de categoria
+// --- MODELO E DADOS DAS CATEGORIAS ---
 class CategoryModel {
   final String title;
   final IconData icon;
@@ -13,17 +13,19 @@ class CategoryModel {
   });
 }
 
-// Lista de dados mockados (fictícios) para construir as categorias
 const List<CategoryModel> mockCategories = [
-  CategoryModel(title: 'Zen', icon: Icons.self_improvement, color: Color(0xFF98B586)),
-  CategoryModel(title: 'Criatividade', icon: Icons.lightbulb, color: Color(0xFF98B586)),
-  CategoryModel(title: 'Gentileza', icon: Icons.handshake, color: Color(0xFF98B586)),
-  CategoryModel(title: 'Coragem', icon: Icons.flash_on, color: Color(0xFF98B586)),
+  // Ícone de folha para 'Zen'
+  CategoryModel(title: 'Zen', icon: Icons.eco, color: Color(0xFF8AAE8A)),
+  // Ícone de lâmpada para 'Criatividade'
+  CategoryModel(title: 'Criatividade', icon: Icons.lightbulb_outline, color: Color(0xFF8AAE8A)),
+  // Ícone de mão com coração para 'Gentileza'
+  CategoryModel(title: 'Gentileza', icon: Icons.volunteer_activism, color: Color(0xFF8AAE8A)),
+  // Ícone de montanha para 'Coragem'
+  CategoryModel(title: 'Coragem', icon: Icons.terrain, color: Color(0xFF8AAE8A)),
 ];
 
-// ----------------------------------------------------------------------
 
-// Esta classe define a estrutura de dados para cada item de desafio em destaque
+// --- MODELO E DADOS DOS DESAFIOS EM DESTAQUE ---
 class HighlightChallengeModel {
   final String title;
   final String points;
@@ -36,9 +38,65 @@ class HighlightChallengeModel {
   });
 }
 
-// Lista de dados mockados (fictícios) para construir os desafios em destaque
 const List<HighlightChallengeModel> mockChallenges = [
-  HighlightChallengeModel(title: 'Medite por 5 min', points: '+30 pontos', color: Color(0xFF98B586)),
-  HighlightChallengeModel(title: 'Beba 3 litros de água', points: '+20 pontos', color: Color(0xFF98B586)),
-  HighlightChallengeModel(title: 'Ligue para um amigo', points: '+50 pontos', color: Color(0xFF98B586)),
+  HighlightChallengeModel(title: 'Medite por 5 min', points: '+30 pontos', color: Color(0xFF8AAE8A)),
+  HighlightChallengeModel(title: 'Beba 3 litros de água', points: '+20 pontos', color: Color(0xFF8AAE8A)),
+  HighlightChallengeModel(title: 'Ligue para um amigo', points: '+50 pontos', color: Color(0xFF8AAE8A)),
+  // Você pode adicionar mais desafios aqui e eles aparecerão na lista!
+];
+
+// --- MODELO E DADOS DAS MISSÕES DIÁRIAS ---
+
+class MissionModel {
+  final String title;
+  final int points;
+  final String categoryTitle;
+  final IconData categoryIcon;
+
+  const MissionModel({
+    required this.title,
+    required this.points,
+    required this.categoryTitle,
+    required this.categoryIcon,
+  });
+}
+
+// Lista de missões para o sorteio
+const List<MissionModel> mockMissions = [
+  MissionModel(
+    title: 'Visite um asilo ou casa de repouso',
+    points: 50,
+    categoryTitle: 'Gentileza',
+    categoryIcon: Icons.volunteer_activism,
+  ),
+  MissionModel(
+    title: 'Elogie um colega de trabalho sinceramente',
+    points: 20,
+    categoryTitle: 'Gentileza',
+    categoryIcon: Icons.volunteer_activism,
+  ),
+  MissionModel(
+    title: 'Passe 15 minutos desenhando ou escrevendo livremente',
+    points: 30,
+    categoryTitle: 'Criatividade',
+    categoryIcon: Icons.lightbulb_outline,
+  ),
+  MissionModel(
+    title: 'Tente uma receita nova para o jantar',
+    points: 40,
+    categoryTitle: 'Criatividade',
+    categoryIcon: Icons.lightbulb_outline,
+  ),
+  MissionModel(
+    title: 'Faça uma caminhada de 20 minutos em silêncio',
+    points: 25,
+    categoryTitle: 'Zen',
+    categoryIcon: Icons.eco,
+  ),
+  MissionModel(
+    title: 'Fale sobre um medo seu com alguém de confiança',
+    points: 60,
+    categoryTitle: 'Coragem',
+    categoryIcon: Icons.terrain,
+  ),
 ];
