@@ -30,15 +30,39 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     super.dispose();
   }
 
+  // Em meu_primeiro_app/lib/telas/missao_em_andamento_tela.dart
+
   Duration _parseDuration(String timeString) {
-    if (timeString.contains("1 minuto")) {
-      return const Duration(minutes: 1); // Corrigido para 1 minuto real
+    // 1. Divide a string em partes. Ex: "15 minutos" vira ["15", "minutos"]
+    final parts = timeString.toLowerCase().split(' ');
+
+    // 2. Verificação de segurança: se o formato não for "número unidade", usa um padrão.
+    if (parts.length < 2) {
+      return const Duration(minutes: 5); // Valor padrão de segurança
     }
-    if (timeString.contains("1 hora")) {
-      return const Duration(hours: 1);
+
+    // 3. Converte a primeira parte para um número. Usamos tryParse para não quebrar se não for um número.
+    final int? value = int.tryParse(parts[0]);
+    if (value == null) {
+      return const Duration(minutes: 5); // Valor padrão de segurança
     }
-    // Valor padrão caso não encontre (você pode ajustar)
-    return const Duration(minutes: 1);
+
+    // 4. Verifica qual é a unidade de tempo e retorna o Duration correto.
+    final String unit = parts[1];
+    switch (unit) {
+      case 'minuto':
+      case 'minutos':
+        return Duration(minutes: value);
+      case 'hora':
+      case 'horas':
+        return Duration(hours: value);
+      case 'segundo':
+      case 'segundos':
+        return Duration(seconds: value);
+      default:
+        // Se a unidade de tempo for desconhecida, retorna um valor padrão.
+        return const Duration(minutes: 5);
+    }
   }
 
   String _formatDuration(Duration duration) {
