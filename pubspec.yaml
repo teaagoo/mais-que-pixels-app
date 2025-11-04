@@ -72,6 +72,9 @@ flutter:
     - assets/illustrations/criatividade_missao.png
     - assets/illustrations/zen_missao.png
     - assets/illustrations/missao_concluida.png
+    - assets/fundo.png
+    - assets/logo.png
+
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

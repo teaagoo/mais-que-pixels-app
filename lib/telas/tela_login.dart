@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meu_primeiro_app/services/auth_services.dart';
 import 'package:meu_primeiro_app/telas/tela_principal.dart';
 import 'package:provider/provider.dart';
-import 'package:meu_primeiro_app/telas/tela_cadastro.dart'; // importa a tela de cadastro
+import 'package:meu_primeiro_app/telas/tela_cadastro.dart';
 
 class LoginPage extends StatefulWidget {
   LoginPage({Key? key}) : super(key: key);
@@ -24,10 +24,9 @@ class _LoginPageState extends State<LoginPage> {
     try {
       await context.read<AuthService>().login(email.text, senha.text);
       Navigator.pushReplacement(
-         context, 
-         MaterialPageRoute(builder: (_) => const TelaPrincipal()),
+        context,
+        MaterialPageRoute(builder: (_) => const TelaPrincipal()),
       );
-
     } on AuthException catch (e) {
       setState(() {
         loading = false;
@@ -39,19 +38,25 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFEAF2E0), 
-      body: SingleChildScrollView(
-        child: Padding(
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('./assets/fundo.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Padding(
           padding: const EdgeInsets.only(top: 100),
           child: Form(
             key: formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 // Título
                 const Text(
-                  'Login',
+                  'Login',               
                   style: TextStyle(
                     fontSize: 35,
                     fontFamily: 'Lato',
@@ -61,9 +66,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                const SizedBox(height: 40),
+                const SizedBox(height: 20),
 
-                // Campo de Email
+                Image.asset(
+                './assets/logo.png',
+                width: 120, 
+                height: 120,
+               
+                ),
+
+              const SizedBox(height: 35),
+   
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: TextFormField(
@@ -88,7 +101,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                // Campo de Senha
+               
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: TextFormField(
@@ -115,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
 
                 
                 Row(
@@ -146,26 +159,27 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 8),
 
-                
                 TextButton(
                   onPressed: () {},
-                  child: const Text(
+                  child: Text(
                     'Esqueceu sua senha?',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(
+                      color: Colors.green[800]
+                      ),
                   ),
                 ),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 20),
 
                 
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF5E8C61),
-                      minimumSize: const Size(double.infinity, 55),
+                      minimumSize: const Size(200, 45),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(20),
                       ),
                     ),
                     onPressed: () {

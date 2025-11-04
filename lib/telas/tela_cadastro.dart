@@ -23,8 +23,8 @@ class _CadastroPageState extends State<CadastroPage> {
     try {
       await context
           .read<AuthService>()
-          .registrar(nome.text, email.text, senha.text); // <-- nome incluído
-      Navigator.pop(context); // volta para o login após cadastro
+          .registrar(nome.text, email.text, senha.text);
+      Navigator.pop(context);
     } on AuthException catch (e) {
       setState(() {
         loading = false;
@@ -38,23 +38,51 @@ class _CadastroPageState extends State<CadastroPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Cadastro")),
-      body: SingleChildScrollView(
+      body: Container(
+        decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('./assets/fundo.png'),
+          fit: BoxFit.cover,
+        ),
+      ),
         child: Padding(
           padding: EdgeInsets.only(top: 50),
           child: Form(
             key: formKey,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Text(
                   "Crie sua conta",
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                   fontSize: 35,
+                    fontFamily: 'Lato',
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    letterSpacing: -1.5,
+                    ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Image.asset(
+                './assets/logo.png',
+                width: 120, 
+                height: 120,
+               
                 ),
                 Padding(
-                  padding: EdgeInsets.all(24),
-                  child: TextFormField(
+                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: TextFormField(                  
                     controller: nome,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: const Color(0xFFC9D8B6),
+                      prefixIcon: const Icon(Icons.person_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       labelText: 'Nome',
                     ),
                     validator: (value) {
@@ -65,12 +93,21 @@ class _CadastroPageState extends State<CadastroPage> {
                     },
                   ),
                 ),
+
+                const SizedBox(height: 20),
+
                 Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: TextFormField(
                     controller: email,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: const Color(0xFFC9D8B6),
+                      prefixIcon: const Icon(Icons.email),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       labelText: 'Email',
                     ),
                     validator: (value) {
@@ -81,13 +118,22 @@ class _CadastroPageState extends State<CadastroPage> {
                     },
                   ),
                 ),
+
+                const SizedBox(height: 20),
+
                 Padding(
-                  padding: EdgeInsets.all(24),
+                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                   child: TextFormField(
                     controller: senha,
                     obscureText: true,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      filled: true,
+                      fillColor: const Color(0xFFC9D8B6),
+                      prefixIcon: const Icon(Icons.key_outlined),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
                       labelText: 'Senha',
                     ),
                     validator: (value) {
@@ -100,9 +146,19 @@ class _CadastroPageState extends State<CadastroPage> {
                     },
                   ),
                 ),
+                
+                const SizedBox(height: 20),
+
                 Padding(
-                  padding: EdgeInsets.all(24),
+                  padding: const EdgeInsets.symmetric(horizontal: 15),
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF5E8C61),
+                      minimumSize: const Size(200, 45),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
                     onPressed: () {
                       if (formKey.currentState!.validate()) {
                         registrar();
@@ -110,7 +166,7 @@ class _CadastroPageState extends State<CadastroPage> {
                     },
                     child: (loading)
                         ? CircularProgressIndicator(color: Colors.white)
-                        : Text("Cadastrar", style: TextStyle(fontSize: 20)),
+                        : Text("Cadastrar",  style: TextStyle(fontSize: 20, color: Colors.white)),
                   ),
                 ),
               ],
