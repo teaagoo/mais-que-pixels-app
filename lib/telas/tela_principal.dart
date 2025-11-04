@@ -4,6 +4,11 @@ import 'package:meu_primeiro_app/models/categorias.dart';
 
 // 1. IMPORTE A TELA DE DETALHES AQUI
 import 'package:meu_primeiro_app/telas/detalhe_missao_tela.dart';
+// NOVOS IMPORTS NECESSÁRIOS
+import 'package:meu_primeiro_app/services/auth_services.dart'; // Para checar o status de login
+import 'package:provider/provider.dart';                       // Para acessar o AuthService
+import 'package:meu_primeiro_app/telas/tela_login.dart';       // Para redirecionar o usuário
+
 
 class TelaPrincipal extends StatefulWidget {
   const TelaPrincipal({Key? key}) : super(key: key);
@@ -108,12 +113,33 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  // --- MÉTODO DO CARD DE MISSÃO MODIFICADO PARA SER CLICÁVEL ---
+  // --- MÉTODO DO CARD DE MISSÃO MODIFICADO PARA SER CLICÁVEL E RESTRINGIR ACESSO ---
   Widget _buildDailyMissionCard(Color backgroundColor) {
-    // 2. ENVOLVEMOS O SIZEDBOX COM O WIDGET INKWELL PARA TORNÁ-LO CLICÁVEL
+    // 1. Acessa o serviço de autenticação
+    final authService = Provider.of<AuthService>(context, listen: false); 
+
     return InkWell(
       // 3. ADICIONAMOS A LÓGICA DE NAVEGAÇÃO NO ONTAP
       onTap: () {
+        // LÓGICA DE RESTRIÇÃO: Verifica se o usuário está logado
+        if (authService.usuario == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Você precisa fazer login para iniciar esta missão!'),
+              backgroundColor: Color(0xFF5E8C61),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Redireciona para a tela de login
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => LoginPage()),
+          );
+          return; // Para a execução
+        }
+        // Fim da Lógica de Restrição
+
+        // Lógica original (só executa se o usuário estiver logado)
         try {
           final detailedMission = mockDetailedMissions.firstWhere(
             (m) => m.title == _currentMission.title,
@@ -364,8 +390,30 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   }
 
   Widget _buildChallengeCard(HighlightChallengeModel challenge) {
+    // 1. Acessa o serviço de autenticação
+    final authService = Provider.of<AuthService>(context, listen: false); 
+
     return InkWell(
       onTap: () {
+        // LÓGICA DE RESTRIÇÃO: Verifica se o usuário está logado
+        if (authService.usuario == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Você precisa fazer login para acessar este desafio!'),
+              backgroundColor: Color(0xFF5E8C61),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          // Redireciona para a tela de login
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => LoginPage()),
+          );
+          return; // Para a execução
+        }
+        // Fim da Lógica de Restrição
+        
+        // Lógica original (só executa se o usuário estiver logado)
         try {
           final detailedMission = mockDetailedMissions.firstWhere(
             (m) => m.title == challenge.title,
@@ -391,16 +439,13 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
       borderRadius: BorderRadius.circular(15.0),
       child: SizedBox(
         width: MediaQuery.of(context).size.width * 0.5,
-        // 1. FORÇAMOS UMA ALTURA FIXA PARA TODOS OS CARDS
-        height:
-            140.0, // <-- MUDANÇA PRINCIPAL AQUI (você pode ajustar este valor)
+        height: 140.0,
         child: Container(
           padding: const EdgeInsets.all(15.0),
           decoration: BoxDecoration(
             color: challenge.color,
             borderRadius: BorderRadius.circular(15.0),
           ),
-          // O Column agora se estica para preencher a altura fixa de 140
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -413,14 +458,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
-                // 2. GARANTIMOS QUE O TEXTO NÃO PASSE DE 2 LINHAS
-                maxLines: 2, // <-- SEGUNDA MUDANÇA AQUI
-                overflow: TextOverflow
-                    .ellipsis, // Se passar de 2 linhas, adiciona "..."
+                maxLines: 2, 
+                overflow: TextOverflow.ellipsis, 
               ),
-              // O SizedBox aqui não é mais necessário porque o MainAxisAlignment.spaceBetween
-              // já vai cuidar do espaçamento. Mas pode manter se gostar do espaço mínimo.
-              // const SizedBox(height: 20),
               Align(
                 alignment: Alignment.bottomRight,
                 child: Container(

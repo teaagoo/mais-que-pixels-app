@@ -8,8 +8,9 @@ class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
   void _iniciar(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/inicio');
-  }
+    // CORREÇÃO: Mude de '/inicio' para '/principal'
+    Navigator.pushReplacementNamed(context, '/principal'); 
+}
 
   @override
   Widget build(BuildContext context) {
