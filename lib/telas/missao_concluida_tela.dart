@@ -1,10 +1,54 @@
+// lib/telas/missao_concluida_tela.dart
+
 import 'package:flutter/material.dart';
+import 'package:meu_primeiro_app/models/categorias.dart'; 
+import 'package:meu_primeiro_app/services/auth_services.dart'; 
+import 'package:meu_primeiro_app/services/user_data_service.dart'; 
+import 'package:meu_primeiro_app/models/usuarios.dart'; 
+import 'package:provider/provider.dart';
 
 class MissaoConcluidaTela extends StatelessWidget {
-  // A tela recebe os pontos da missão que foi concluída
-  final int pontosGanhos;
+  // REMOVIDO o 'const' do construtor
+  final DetailedMissionModel missao; 
+  final UserDataService _userDataService = UserDataService();
 
-  const MissaoConcluidaTela({Key? key, required this.pontosGanhos}) : super(key: key);
+  // Construtor Corrigido
+  MissaoConcluidaTela({Key? key, required this.missao}) : super(key: key);
+
+  // --- LÓGICA DE ATUALIZAÇÃO DO FIRESTORE ---
+  void _concluirMissao(BuildContext context) async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final String? uid = authService.usuario?.uid;
+    final int pontosGanhos = missao.points;
+
+    if (uid != null) {
+      try {
+        // 1. CHAMA O SERVIÇO PARA INCREMENTAR PONTOS E MISSÕES CONCLUÍDAS NO FIRESTORE
+        await _userDataService.updateMissionCompletion(uid, pontosGanhos);
+
+        // 2. Feedback e navegação para a tela principal
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('🎉 Missão Concluída! Você ganhou $pontosGanhos pontos!'),
+            backgroundColor: const Color(0xFF3A6A4D),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+
+        // Volta para a tela principal
+        Navigator.popUntil(context, (route) => route.isFirst);
+
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro ao registrar missão no banco de dados.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  // ------------------------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -15,21 +59,18 @@ class MissaoConcluidaTela extends StatelessWidget {
       backgroundColor: primaryColor,
       body: Column(
         children: [
-          // O cabeçalho é o mesmo das outras telas
-          _buildHeader(),
-          
-          // O conteúdo principal da tela
+          _buildHeader(context),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Ilustração de sucesso/comemoração
-                Image.asset('assets/illustrations/missao_concluida.png', height: 250),
-                const SizedBox(height: 30),
-                
-                // Os textos e o card de pontos
-                _buildSuccessContent(context, accentColor),
-              ],
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 30),
+                  Image.asset('assets/illustrations/missao_concluida.png', height: 250),
+                  const SizedBox(height: 30),
+                  _buildSuccessContent(context, accentColor),
+                ],
+              ),
             ),
           ),
         ],
@@ -37,158 +78,172 @@ class MissaoConcluidaTela extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
-  return Padding(
-    padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 10),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center, // Adicionado para melhor alinhamento vertical
-      children: [
-        // O Expanded vai aqui, envolvendo a Row interna para que ela seja flexível
-        Expanded(
-          child: Row(
+  // --- CABEÇALHO PADRONIZADO E DINÂMICO ---
+  Widget _buildHeader(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+    final String? uid = authService.usuario?.uid;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 10),
+      child: FutureBuilder<Usuario?>(
+        future: uid != null ? _userDataService.getUserData(uid) : Future.value(null),
+        builder: (context, snapshot) {
+          final usuario = snapshot.data;
+          
+          String nome = 'Analu!';
+          String pontos = '0 pontos';
+          
+          if (usuario != null) {
+            nome = '${usuario.nome.split(' ').first}!';
+            pontos = '${usuario.pontos} pontos';
+          }
+          
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const CircleAvatar(
-                radius: 28,
-                backgroundImage: AssetImage('assets/perfil_analu.png'),
-              ),
-              const SizedBox(width: 15),
-              // E outro Expanded aqui dentro, para que a coluna de texto
-              // ocupe todo o espaço restante disponível nesta Row interna
               Expanded(
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      'Olá, Analu!', 
-                      style: TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold, fontSize: 20),
-                      overflow: TextOverflow.ellipsis, // Evita que o nome quebre a linha
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundImage: AssetImage('assets/perfil_analu.png'),
                     ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Vamos viver algo novo hoje?', 
-                      style: TextStyle(fontFamily: 'Lato', color: Colors.black54),
-                      overflow: TextOverflow.ellipsis, // Adiciona "..." se o texto for muito grande
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Olá, $nome', 
+                            style: const TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold, fontSize: 20),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Vamos viver algo novo hoje?', 
+                            style: TextStyle(fontFamily: 'Lato', color: Colors.black54),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                    const SizedBox(width: 5),
+                    Text(pontos, style: const TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              )
             ],
-          ),
-        ),
-        // O Container dos pontos fica fora do Expanded, 
-        // pois ele tem um tamanho fixo e queremos que ele fique à direita.
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
-            ],
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.emoji_events, color: Colors.amber, size: 20),
-              SizedBox(width: 5),
-              Text('640 pontos', style: TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold)),
-            ],
-          ),
-        )
-      ],
-    ),
-  );
-}
+          );
+        },
+      ),
+    );
+  }
+  // --------------------------------------------------------------------------
 
   Widget _buildSuccessContent(BuildContext context, Color accentColor) {
-    return Column(
-      children: [
-        const Text(
-          'Missão cumprida!',
-          style: TextStyle(fontFamily: 'MochiyPopOne', fontSize: 32, color: Color(0xFF3A6A4D)),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Parabéns!',
-          style: TextStyle(fontFamily: 'Lato', fontSize: 18, color: Colors.black54),
-        ),
-        const SizedBox(height: 30),
-        
-        // Card de Pontos Ganhos
-        Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.topCenter,
-          children: [
-            // O card branco que fica embaixo
-            Container(
-              margin: const EdgeInsets.only(top: 15),
-              padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5)),
-                ]
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.emoji_events, color: Colors.amber, size: 30),
-                  const SizedBox(width: 10),
-                  Text(
-                    '+$pontosGanhos pts',
-                    style: const TextStyle(
-                      fontFamily: 'Lato',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // A tag "Total de Pontos" que fica por cima
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Text(
-                'Total de Pontos',
-                style: TextStyle(color: Colors.white, fontFamily: 'Lato', fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 40),
-
-        // Botão Finalizar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                // Navega de volta para a primeira tela da pilha (tela_principal)
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accentColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 30.0),
+      child: Column(
+        children: [
+          const Text(
+            'Missão cumprida!',
+            style: TextStyle(fontFamily: 'MochiyPopOne', fontSize: 32, color: Color(0xFF3A6A4D)),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Parabéns por completar "${missao.title}"!',
+            style: const TextStyle(fontFamily: 'Lato', fontSize: 18, color: Colors.black54),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 30),
+          
+          // Card de Pontos Ganhos
+          Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.topCenter,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 15),
+                padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 5)),
+                  ]
                 ),
-                elevation: 5,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.amber, size: 30),
+                    const SizedBox(width: 10),
+                    Text(
+                      '+${missao.points} pts',
+                      style: const TextStyle(
+                        fontFamily: 'Lato',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 24,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: const Text(
-                'Finalizar',
-                style: TextStyle(fontSize: 18, fontFamily: 'Lato', fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: accentColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Text(
+                  'PONTOS GANHOS',
+                  style: TextStyle(color: Colors.white, fontFamily: 'Lato', fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 40),
+
+          // Botão Finalizar - Chama a lógica de atualização no onPressed
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _concluirMissao(context), 
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: accentColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  elevation: 5,
+                ),
+                child: const Text(
+                  'Finalizar e Coletar Pontos',
+                  style: TextStyle(fontSize: 18, fontFamily: 'Lato', fontWeight: FontWeight.bold),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

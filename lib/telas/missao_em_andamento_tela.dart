@@ -1,7 +1,13 @@
+// lib/telas/missao_em_andamento_tela.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:meu_primeiro_app/models/categorias.dart';
 import 'package:meu_primeiro_app/telas/missao_concluida_tela.dart';
+import 'package:meu_primeiro_app/services/auth_services.dart'; 
+import 'package:meu_primeiro_app/services/user_data_service.dart'; 
+import 'package:meu_primeiro_app/models/usuarios.dart'; 
+import 'package:provider/provider.dart';
 
 class MissaoEmAndamentoTela extends StatefulWidget {
   final DetailedMissionModel missao;
@@ -16,6 +22,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
   late Timer _timer;
   late Duration _remainingTime;
   bool _isPaused = false;
+  final UserDataService _userDataService = UserDataService();
 
   @override
   void initState() {
@@ -30,24 +37,19 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     super.dispose();
   }
 
-  // Em meu_primeiro_app/lib/telas/missao_em_andamento_tela.dart
-
+  // Lógica para converter string de tempo em Duration
   Duration _parseDuration(String timeString) {
-    // 1. Divide a string em partes. Ex: "15 minutos" vira ["15", "minutos"]
     final parts = timeString.toLowerCase().split(' ');
 
-    // 2. Verificação de segurança: se o formato não for "número unidade", usa um padrão.
     if (parts.length < 2) {
-      return const Duration(minutes: 5); // Valor padrão de segurança
+      return const Duration(minutes: 5); 
     }
 
-    // 3. Converte a primeira parte para um número. Usamos tryParse para não quebrar se não for um número.
     final int? value = int.tryParse(parts[0]);
     if (value == null) {
-      return const Duration(minutes: 5); // Valor padrão de segurança
+      return const Duration(minutes: 5);
     }
 
-    // 4. Verifica qual é a unidade de tempo e retorna o Duration correto.
     final String unit = parts[1];
     switch (unit) {
       case 'minuto':
@@ -60,11 +62,11 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
       case 'segundos':
         return Duration(seconds: value);
       default:
-        // Se a unidade de tempo for desconhecida, retorna um valor padrão.
         return const Duration(minutes: 5);
     }
   }
 
+  // Lógica para formatar Duration em HH:MM:SS
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
@@ -73,6 +75,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     return "$hours:$minutes:$seconds";
   }
 
+  // Lógica para iniciar o timer
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_isPaused && mounted) {
@@ -81,13 +84,13 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
             _remainingTime = _remainingTime - const Duration(seconds: 1);
           } else {
             _timer.cancel();
-            // Evita erro de navegação durante o build
+            // Navegação para a tela de Concluída (missão bem-sucedida)
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
                   builder: (context) => MissaoConcluidaTela(
-                    pontosGanhos: widget.missao.points,
+                    missao: widget.missao,
                   ),
                 ),
               );
@@ -104,6 +107,25 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     });
   }
 
+  // --- FUNÇÃO DE ABANDONO ---
+  void _abandonarMissao(BuildContext context) {
+    // 1. Cancela o timer para interromper a contagem
+    _timer.cancel();
+
+    // 2. Notifica o usuário
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Missão abandonada. Tente novamente mais tarde.'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+
+    // 3. Volta para a tela principal (pop até a primeira rota)
+    // IMPORTANTISSIMO: Não há chamada para o UserDataService aqui!
+    Navigator.popUntil(context, (route) => route.isFirst);
+  }
+  // --------------------------
+
   @override
   Widget build(BuildContext context) {
     const Color primaryColor = Color(0xFFE5EDE4);
@@ -115,7 +137,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.topCenter,
@@ -130,7 +152,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
             const SizedBox(height: 30),
             _buildTimerDisplay(accentColor),
             const SizedBox(height: 20),
-            _buildTimerControls(darkColor),
+            _buildTimerControls(darkColor, context), // Passando o contexto
             const SizedBox(height: 40),
           ],
         ),
@@ -138,7 +160,82 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     );
   }
 
-  // --- MÉTODOS DE BUILD CORRIGIDOS ---
+  // --- CABEÇALHO PADRONIZADO E DINÂMICO ---
+  Widget _buildHeader(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+    final String? uid = authService.usuario?.uid;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 10),
+      child: FutureBuilder<Usuario?>(
+        future: uid != null ? _userDataService.getUserData(uid) : Future.value(null),
+        builder: (context, snapshot) {
+          final usuario = snapshot.data;
+          
+          String nome = 'Analu!';
+          String pontos = '0 pontos';
+          
+          if (usuario != null) {
+            nome = '${usuario.nome.split(' ').first}!';
+            pontos = '${usuario.pontos} pontos';
+          }
+          
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundImage: AssetImage('assets/perfil_analu.png'),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Olá, $nome', 
+                            style: const TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold, fontSize: 20),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Vamos viver algo novo hoje?', 
+                            style: TextStyle(fontFamily: 'Lato', color: Colors.black54),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                    const SizedBox(width: 5),
+                    Text(pontos, style: const TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              )
+            ],
+          );
+        },
+      ),
+    );
+  }
 
   Widget _buildTimerDisplay(Color color) {
     return Container(
@@ -158,7 +255,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     );
   }
 
-  Widget _buildTimerControls(Color darkColor) {
+  Widget _buildTimerControls(Color darkColor, BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Column(
@@ -184,9 +281,8 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
           ),
           const SizedBox(height: 15),
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            // CHAMA A NOVA FUNÇÃO DE ABANDONO!
+            onPressed: () => _abandonarMissao(context), 
             style: ElevatedButton.styleFrom(
               backgroundColor: darkColor,
               foregroundColor: Colors.white,
@@ -197,7 +293,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
               elevation: 5,
             ),
             child: const Text(
-              'Abandonar',
+              'Abandonar Missão', // Texto mais claro
               style: TextStyle(fontSize: 16, fontFamily: 'Lato'),
             ),
           ),
@@ -206,68 +302,6 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     );
   }
 
-  Widget _buildHeader() {
-  return Padding(
-    padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 10),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center, // Adicionado para melhor alinhamento vertical
-      children: [
-        // O Expanded vai aqui, envolvendo a Row interna para que ela seja flexível
-        Expanded(
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 28,
-                backgroundImage: AssetImage('assets/perfil_analu.png'),
-              ),
-              const SizedBox(width: 15),
-              // E outro Expanded aqui dentro, para que a coluna de texto
-              // ocupe todo o espaço restante disponível nesta Row interna
-              Expanded(
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Olá, Analu!', 
-                      style: TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold, fontSize: 20),
-                      overflow: TextOverflow.ellipsis, // Evita que o nome quebre a linha
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Vamos viver algo novo hoje?', 
-                      style: TextStyle(fontFamily: 'Lato', color: Colors.black54),
-                      overflow: TextOverflow.ellipsis, // Adiciona "..." se o texto for muito grande
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        // O Container dos pontos fica fora do Expanded, 
-        // pois ele tem um tamanho fixo e queremos que ele fique à direita.
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10),
-            ],
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.emoji_events, color: Colors.amber, size: 20),
-              SizedBox(width: 5),
-              Text('590 pontos', style: TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold)),
-            ],
-          ),
-        )
-      ],
-    ),
-  );
-}
   Widget _buildMissionCard(Color accentColor) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -287,7 +321,6 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
             ],
           ),
           const SizedBox(height: 20),
-          // Removido o 'const' pois 'widget.missao.title' não é constante
           Text(
             widget.missao.title,
             textAlign: TextAlign.center,

@@ -1,3 +1,5 @@
+// lib/telas/tela_login.dart
+
 import 'package:flutter/material.dart';
 import 'package:meu_primeiro_app/services/auth_services.dart';
 import 'package:meu_primeiro_app/telas/tela_principal.dart';
@@ -5,7 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:meu_primeiro_app/telas/tela_cadastro.dart';
 
 class LoginPage extends StatefulWidget {
-  LoginPage({Key? key}) : super(key: key);
+  // CORREÇÃO: Remova 'const' daqui
+  LoginPage({Key? key}) : super(key: key); 
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -23,10 +26,11 @@ class _LoginPageState extends State<LoginPage> {
     });
     try {
       await context.read<AuthService>().login(email.text, senha.text);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TelaPrincipal()),
-      );
+      
+      // EXCLUÍDO: REMOVIDA A NAVEGAÇÃO MANUAL!
+      // Se o login for bem-sucedido, o AuthCheck fará o redirecionamento
+      // automaticamente para a TelaPrincipal.
+
     } on AuthException catch (e) {
       setState(() {
         loading = false;
@@ -38,6 +42,8 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+// ... O restante da função build permanece EXATAMENTE igual ...
+
     return Container(
       decoration: const BoxDecoration(
         image: DecorationImage(
@@ -140,7 +146,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
+                        // CORREÇÃO: Adiciona navegação para o Cadastro
+                        Navigator.push( 
                           context,
                           MaterialPageRoute(builder: (_) => CadastroPage()),
                         );

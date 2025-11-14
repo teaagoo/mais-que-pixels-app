@@ -1,14 +1,15 @@
+// lib/telas/tela_principal.dart
+
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:meu_primeiro_app/models/categorias.dart';
-
-// 1. IMPORTE A TELA DE DETALHES AQUI
+import 'package:meu_primeiro_app/models/usuarios.dart'; 
 import 'package:meu_primeiro_app/telas/detalhe_missao_tela.dart';
-// NOVOS IMPORTS NECESSÁRIOS
-import 'package:meu_primeiro_app/services/auth_services.dart'; // Para checar o status de login
-import 'package:provider/provider.dart';                       // Para acessar o AuthService
-import 'package:meu_primeiro_app/telas/tela_login.dart';       // Para redirecionar o usuário
-
+import 'package:meu_primeiro_app/services/auth_services.dart'; 
+import 'package:meu_primeiro_app/services/user_data_service.dart'; 
+import 'package:meu_primeiro_app/services/mission_service.dart';
+import 'package:provider/provider.dart'; 
+import 'package:meu_primeiro_app/telas/tela_login.dart'; 
 
 class TelaPrincipal extends StatefulWidget {
   const TelaPrincipal({Key? key}) : super(key: key);
@@ -18,23 +19,58 @@ class TelaPrincipal extends StatefulWidget {
 }
 
 class _TelaPrincipalState extends State<TelaPrincipal> {
-  late MissionModel _currentMission;
+  DetailedMissionModel? _currentMission;
+  List<DetailedMissionModel> _availableMissions = []; 
+  bool _isMissionsLoading = true; 
   final _random = Random();
+  
+  // RESTAURADO: Variável de estado para o BottomNavigationBar
+  int _selectedIndex = 0;
+
+  // Serviços
+  late UserDataService _userDataService;
+  late MissionService _missionService;
 
   @override
   void initState() {
     super.initState();
-    _currentMission = mockMissions[0];
+    _currentMission = null; 
   }
 
-  void _sortearNovaMissao() {
-    final index = _random.nextInt(mockMissions.length);
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_isMissionsLoading) {
+      _userDataService = Provider.of<UserDataService>(context, listen: false);
+      _missionService = Provider.of<MissionService>(context, listen: false);
+      _loadInitialMissions();
+    }
+  }
+
+  void _loadInitialMissions() async {
+    final missions = await _missionService.getMissions();
     setState(() {
-      _currentMission = mockMissions[index];
+      _availableMissions = missions;
+      _isMissionsLoading = false;
+
+      if (_availableMissions.isNotEmpty) {
+        _currentMission = _availableMissions[_random.nextInt(_availableMissions.length)];
+      } else {
+        _currentMission = null;
+      }
     });
   }
 
-  int _selectedIndex = 0;
+  void _sortearNovaMissao() {
+    if (_availableMissions.isEmpty) return;
+
+    final index = _random.nextInt(_availableMissions.length);
+    setState(() {
+      _currentMission = _availableMissions[index];
+    });
+  }
+
+  // CORRIGIDO: Função de atualização do índice restaurada
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -46,23 +82,89 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     const Color primaryColor = Color(0xFF3A6A4D);
     const Color lightGreenBackgroundColor = Color(0xFFE8F5E9);
 
+    final authService = Provider.of<AuthService>(context);
+    final String? uid = authService.usuario?.uid;
+    
+    if (_isMissionsLoading) {
+      return const Scaffold(
+        backgroundColor: primaryColor,
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
+    }
+    
+    if (_availableMissions.isEmpty || _currentMission == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("Missões")),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Text(
+              _availableMissions.isEmpty 
+              ? "Nenhuma missão disponível. Verifique a coleção 'missoes' no Firestore."
+              : "Erro ao sortear missão.", 
+              textAlign: TextAlign.center,
+              style: TextStyle(color: primaryColor, fontSize: 16)),
+          ),
+        ),
+        backgroundColor: Colors.white,
+      );
+    }
+
+    final currentMission = _currentMission!;
+
     return Scaffold(
       backgroundColor: primaryColor,
-      body: Stack(
-        children: [
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: Image.asset(
-              'assets/header_tela_inicial.png',
-              fit: BoxFit.cover,
+      
+      appBar: AppBar(
+        title: const Text(
+          'Mais que Pixels', 
+          style: TextStyle(fontFamily: 'MochiyPopOne', color: Colors.white),
+        ),
+        backgroundColor: primaryColor,
+        elevation: 0, 
+        automaticallyImplyLeading: false, 
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Sair',
+            onPressed: () {
+              authService.logout(); 
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Você foi desconectado.')),
+              );
+            },
+          ),
+        ],
+      ),
+      
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            backgroundColor: primaryColor,
+            expandedHeight: 200.0, 
+            pinned: false,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Stack(
+                children: [
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/header_tela_inicial.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: _buildHeader(uid), 
+                  ),
+                ],
+              ),
             ),
           ),
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 150),
+          SliverList(
+            delegate: SliverChildListDelegate(
+              [
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
                   decoration: const BoxDecoration(
@@ -77,13 +179,10 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                     children: [
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                        child: _buildHeader(),
-                      ),
-                      const SizedBox(height: 20),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
                         child: _buildDailyMissionCard(
                           lightGreenBackgroundColor,
+                          authService, 
+                          currentMission, 
                         ),
                       ),
                       const SizedBox(height: 30),
@@ -99,7 +198,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                         child: _buildSectionTitle('Desafios em Destaque'),
                       ),
                       const SizedBox(height: 15),
-                      _buildFeaturedChallenges(),
+                      _buildFeaturedChallenges(authService), 
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -113,15 +212,88 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  // --- MÉTODO DO CARD DE MISSÃO MODIFICADO PARA SER CLICÁVEL E RESTRINGIR ACESSO ---
-  Widget _buildDailyMissionCard(Color backgroundColor) {
-    // 1. Acessa o serviço de autenticação
-    final authService = Provider.of<AuthService>(context, listen: false); 
+  // --- CABEÇALHO DINÂMICO COM BUSCA EM TEMPO REAL (STREAM) ---
+  Widget _buildHeader(String? uid) {
+    if (uid == null) {
+      return _buildHeaderContent(
+        greeting: 'Olá!', 
+        subtitle: 'Faça login para salvar seu progresso.', 
+        photoUrl: null,
+      );
+    }
 
+    return StreamBuilder<Usuario?>(
+      stream: _userDataService.getUserStream(uid),
+      builder: (context, snapshot) {
+        String greeting = 'Olá!';
+        String subtitle = 'Carregando pontos...';
+        String? photoUrl;
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+            subtitle = 'Carregando...';
+        }
+        else if (snapshot.hasData && snapshot.data != null) {
+          final usuario = snapshot.data!;
+          greeting = 'Olá, ${usuario.nome.split(' ').first}!';
+          subtitle = 'Seus pontos: ${usuario.pontos}'; 
+          photoUrl = usuario.photoUrl; 
+        } else if (snapshot.hasError) {
+          subtitle = 'Erro ao carregar dados.';
+        }
+
+        return _buildHeaderContent(
+          greeting: greeting, 
+          subtitle: subtitle, 
+          photoUrl: photoUrl, 
+        );
+      },
+    );
+  }
+
+  // Lógica de Layout do Header
+  Widget _buildHeaderContent({
+    required String greeting,
+    required String subtitle,
+    required String? photoUrl, 
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              greeting,
+              style: const TextStyle(
+                fontFamily: 'MochiyPopOne',
+                fontSize: 28,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontFamily: 'Lato',
+                fontSize: 16,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        
+        // CORREÇÃO: Usando o novo widget UserAvatar
+      ],
+    );
+  }
+
+  Widget _buildDailyMissionCard(
+    Color backgroundColor,
+    AuthService authService,
+    DetailedMissionModel mission, 
+  ) {
     return InkWell(
-      // 3. ADICIONAMOS A LÓGICA DE NAVEGAÇÃO NO ONTAP
       onTap: () {
-        // LÓGICA DE RESTRIÇÃO: Verifica se o usuário está logado
         if (authService.usuario == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -130,37 +302,19 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
               duration: Duration(seconds: 2),
             ),
           );
-          // Redireciona para a tela de login
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => LoginPage()),
           );
-          return; // Para a execução
+          return;
         }
-        // Fim da Lógica de Restrição
 
-        // Lógica original (só executa se o usuário estiver logado)
-        try {
-          final detailedMission = mockDetailedMissions.firstWhere(
-            (m) => m.title == _currentMission.title,
-          );
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetalheMissaoTela(missao: detailedMission),
-            ),
-          );
-        } catch (e) {
-          print(
-            "Erro: Não foi encontrada uma missão detalhada para '${_currentMission.title}'.",
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Detalhes desta missão não encontrados!'),
-            ),
-          );
-        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetalheMissaoTela(missao: mission),
+          ),
+        );
       },
       borderRadius: BorderRadius.circular(20.0),
       child: SizedBox(
@@ -192,13 +346,13 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _currentMission.categoryIcon,
+                              mission.categoryIcon,
                               size: 16,
                               color: Color(0xFF3A6A4D),
                             ),
                             SizedBox(width: 5),
                             Text(
-                              _currentMission.categoryTitle,
+                              mission.categoryTitle,
                               style: TextStyle(
                                 fontFamily: 'Lato',
                                 fontWeight: FontWeight.bold,
@@ -221,7 +375,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _currentMission.title,
+                      mission.title,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Lato',
@@ -246,7 +400,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                         borderRadius: BorderRadius.circular(15.0),
                       ),
                       child: Text(
-                        '+${_currentMission.points} pontos',
+                        // CORREÇÃO: Usamos o ponto numérico da missão para formatar
+                        '+${mission.points} pontos',
                         style: TextStyle(
                           fontFamily: 'Lato',
                           color: Color(0xFF3A6A4D),
@@ -285,41 +440,6 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
           ),
         ),
       ),
-    );
-  }
-
-  // --- O RESTO DO SEU CÓDIGO CONTINUA IGUAL ---
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Olá, Analu!',
-              style: TextStyle(
-                fontFamily: 'MochiyPopOne',
-                fontSize: 28,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Vamos fazer uma missão hoje?',
-              style: TextStyle(
-                fontFamily: 'Lato',
-                fontSize: 16,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        const CircleAvatar(
-          radius: 28,
-          backgroundImage: AssetImage('assets/perfil_analu.png'),
-        ),
-      ],
     );
   }
 
@@ -374,28 +494,32 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  Widget _buildFeaturedChallenges() {
+  Widget _buildFeaturedChallenges(AuthService authService) {
+    final featuredChallenges = _availableMissions.take(3).toList(); 
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Row(
-        children: mockChallenges.map((challenge) {
+        children: featuredChallenges.map((challenge) {
+          final highlightModel = HighlightChallengeModel(
+            title: challenge.title, 
+            points: challenge.points, 
+            color: Color(0xFF8AAE8A), 
+          );
+
           return Padding(
             padding: const EdgeInsets.only(right: 15.0),
-            child: _buildChallengeCard(challenge),
+            child: _buildChallengeCard(highlightModel, authService, challenge),
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildChallengeCard(HighlightChallengeModel challenge) {
-    // 1. Acessa o serviço de autenticação
-    final authService = Provider.of<AuthService>(context, listen: false); 
-
+  Widget _buildChallengeCard(HighlightChallengeModel highlight, AuthService authService, DetailedMissionModel detailedMission) {
     return InkWell(
       onTap: () {
-        // LÓGICA DE RESTRIÇÃO: Verifica se o usuário está logado
         if (authService.usuario == null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -404,37 +528,20 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
               duration: Duration(seconds: 2),
             ),
           );
-          // Redireciona para a tela de login
           Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => LoginPage()),
           );
-          return; // Para a execução
+          return;
         }
-        // Fim da Lógica de Restrição
         
-        // Lógica original (só executa se o usuário estiver logado)
-        try {
-          final detailedMission = mockDetailedMissions.firstWhere(
-            (m) => m.title == challenge.title,
-          );
-
-          Navigator.push(
+        // Navega para os detalhes usando a missão real
+        Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => DetalheMissaoTela(missao: detailedMission),
             ),
           );
-        } catch (e) {
-          print(
-            "Erro: Não foi encontrada uma missão detalhada para '${challenge.title}'.",
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Detalhes deste desafio ainda não disponíveis!'),
-            ),
-          );
-        }
       },
       borderRadius: BorderRadius.circular(15.0),
       child: SizedBox(
@@ -443,7 +550,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
         child: Container(
           padding: const EdgeInsets.all(15.0),
           decoration: BoxDecoration(
-            color: challenge.color,
+            color: highlight.color,
             borderRadius: BorderRadius.circular(15.0),
           ),
           child: Column(
@@ -451,7 +558,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                challenge.title,
+                highlight.title,
                 style: const TextStyle(
                   fontFamily: 'Lato',
                   color: Colors.white,
@@ -473,7 +580,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                   child: Text(
-                    challenge.points,
+                    // Usa o getter formatado do HighlightModel
+                    highlight.formattedPoints, 
                     style: const TextStyle(
                       fontFamily: 'Lato',
                       color: Color(0xFF3A6A4D),

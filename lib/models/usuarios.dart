@@ -1,34 +1,68 @@
+// lib/models/usuarios.dart - CÓDIGO FINAL CORRIGIDO
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Usuario {
-  final int? id; 
+  final String? id; 
   final String nome;
   final String email;
-  final String senha;
+
+  // Campos de progresso
+  final int pontos;
+  final int missoesConcluidas;
+
+  // Campo de Perfil
+  final String? photoUrl; 
 
   Usuario({
     this.id, 
     required this.nome, 
-    required this.email, 
-    required this.senha,
+    required this.email,
+    this.pontos = 0, 
+    this.missoesConcluidas = 0, 
+    this.photoUrl,
   });
 
-  factory Usuario.fromMap(Map<String, dynamic> map) {
+  // Método de conveniência para cópia (manter imutabilidade)
+  Usuario copyWith({
+    String? id, 
+    String? nome, 
+    String? email,
+    int? pontos,
+    int? missoesConcluidas,
+    String? photoUrl,
+  }) {
     return Usuario(
-      id: map['id'] as int?,
-      nome: map['nome'] as String,
-      email: map['email'] as String,
-      senha: map['senha'] as String,
+      id: id ?? this.id,
+      nome: nome ?? this.nome,
+      email: email ?? this.email,
+      pontos: pontos ?? this.pontos,
+      // CORREÇÃO: Usando a variável 'missoesConcluidas' correta
+      missoesConcluidas: missoesConcluidas ?? this.missoesConcluidas, 
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 
+  // Construtor de Fábrica Padrão para leitura do Firestore
+  factory Usuario.fromFirestore(Map<String, dynamic> data, String uid) {
+    return Usuario(
+      id: uid, 
+      nome: data['nome'] as String? ?? 'Nome não definido',
+      email: data['email'] as String? ?? 'Email não definido',
+      pontos: (data['pontos'] as num?)?.toInt() ?? 0, 
+      missoesConcluidas: (data['missoesConcluidas'] as num?)?.toInt() ?? 0,
+      photoUrl: data['photoUrl'] as String?,
+    );
+  }
+
+  // Converte para Map para salvar no Firestore
   Map<String, dynamic> toMap() {
-    final map = <String, dynamic>{
+    return {
       'nome': nome,
       'email': email,
-      'senha': senha,
+      'pontos': pontos,
+      'missoesConcluidas': missoesConcluidas,
+      'photoUrl': photoUrl,
     };
-    if (id != null) {
-      map['id'] = id;
-    }
-    return map;
   }
 }
