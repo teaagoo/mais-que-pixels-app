@@ -1,55 +1,54 @@
 // lib/main.dart
 
 import 'package:flutter/material.dart';
-import 'package:meu_primeiro_app/telas/boas_vindas.dart'; 
-import 'package:meu_primeiro_app/telas/tela_principal.dart'; 
-import 'package:meu_primeiro_app/services/auth_services.dart'; 
-import 'package:meu_primeiro_app/services/user_data_service.dart'; 
-import 'package:meu_primeiro_app/services/mission_service.dart';
-// **Imports de StorageService e ProfileProvider removidos**
-import 'package:meu_primeiro_app/widgets/auth_check.dart'; 
-import 'package:provider/provider.dart'; 
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 
+// SERVICES
+import 'package:meu_primeiro_app/services/auth_services.dart';
+import 'package:meu_primeiro_app/services/user_data_service.dart';
+import 'package:meu_primeiro_app/services/mission_service.dart';
+import 'package:meu_primeiro_app/services/stats_service.dart';
+
+// TELAS
+import 'package:meu_primeiro_app/widgets/auth_check.dart';
+import 'package:meu_primeiro_app/telas/tela_principal.dart';
+import 'package:meu_primeiro_app/telas/modo_foco_config.dart';
+import 'package:meu_primeiro_app/telas/modo_foco_em_andamento.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  
+
   runApp(
     MultiProvider(
       providers: [
-        // 1. AuthService - Gerencia o estado de autenticação
-        ChangeNotifierProvider(create: (context) => AuthService()),
-        
-        // 2. UserDataService - Acesso aos dados do usuário no Firestore
-        Provider(create: (context) => UserDataService()), 
-        
-        // 3. MissionService - Acesso às missões do Firestore (DEVE ESTAR AQUI)
-        Provider(create: (context) => MissionService()),
+        ChangeNotifierProvider(create: (_) => AuthService()),
+        Provider(create: (_) => UserDataService()),
+        Provider(create: (_) => MissionService()),
+        Provider(create: (_) => StatsService()),
       ],
-      child: const MyApp(),
+      child: MyApp(),   // ❌ REMOVIDO const
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  MyApp({super.key});  // ❌ REMOVIDO const
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mais que Pixels',
-      debugShowCheckedModeBanner: false, 
-      theme: ThemeData(
-        fontFamily: 'Lato',
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF3A6A4D)),
-        useMaterial3: true,
-      ),
-      home: AuthCheck(), 
-      
+      debugShowCheckedModeBanner: false,
+
+      home: AuthCheck(),   // ❌ REMOVIDO const
+
       routes: {
         '/principal': (context) => const TelaPrincipal(),
+        '/foco-config': (context) => ModoFocoConfigTela(),
+        '/foco-progresso': (context) => ModoFocoEmAndamentoTela(
+              durationMinutes: 30,
+            ),
       },
     );
   }

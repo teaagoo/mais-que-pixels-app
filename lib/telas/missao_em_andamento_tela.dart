@@ -2,15 +2,15 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:meu_primeiro_app/models/categorias.dart';
+import 'package:meu_primeiro_app/models/missao.dart';
 import 'package:meu_primeiro_app/telas/missao_concluida_tela.dart';
-import 'package:meu_primeiro_app/services/auth_services.dart'; 
-import 'package:meu_primeiro_app/services/user_data_service.dart'; 
-import 'package:meu_primeiro_app/models/usuarios.dart'; 
+import 'package:meu_primeiro_app/services/auth_services.dart';
+import 'package:meu_primeiro_app/services/user_data_service.dart';
+import 'package:meu_primeiro_app/models/usuarios.dart';
 import 'package:provider/provider.dart';
 
 class MissaoEmAndamentoTela extends StatefulWidget {
-  final DetailedMissionModel missao;
+  final Missao missao;
 
   const MissaoEmAndamentoTela({Key? key, required this.missao}) : super(key: key);
 
@@ -37,12 +37,12 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     super.dispose();
   }
 
-  // Lógica para converter string de tempo em Duration
+  // Converte string (ex: "5 minutos", "1 hora") para Duration
   Duration _parseDuration(String timeString) {
     final parts = timeString.toLowerCase().split(' ');
 
     if (parts.length < 2) {
-      return const Duration(minutes: 5); 
+      return const Duration(minutes: 5);
     }
 
     final int? value = int.tryParse(parts[0]);
@@ -66,7 +66,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     }
   }
 
-  // Lógica para formatar Duration em HH:MM:SS
+  // Formata Duration como HH:MM:SS
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
     final hours = twoDigits(duration.inHours);
@@ -75,7 +75,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     return "$hours:$minutes:$seconds";
   }
 
-  // Lógica para iniciar o timer
+  // Inicia o timer
   void _startTimer() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!_isPaused && mounted) {
@@ -84,7 +84,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
             _remainingTime = _remainingTime - const Duration(seconds: 1);
           } else {
             _timer.cancel();
-            // Navegação para a tela de Concluída (missão bem-sucedida)
+            // Ao terminar, navega para tela de missão concluída
             WidgetsBinding.instance.addPostFrameCallback((_) {
               Navigator.pushReplacement(
                 context,
@@ -107,12 +107,10 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     });
   }
 
-  // --- FUNÇÃO DE ABANDONO ---
+  // Função de abandono: cancela timer e volta pra tela inicial
   void _abandonarMissao(BuildContext context) {
-    // 1. Cancela o timer para interromper a contagem
     _timer.cancel();
 
-    // 2. Notifica o usuário
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Missão abandonada. Tente novamente mais tarde.'),
@@ -120,11 +118,8 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
       ),
     );
 
-    // 3. Volta para a tela principal (pop até a primeira rota)
-    // IMPORTANTISSIMO: Não há chamada para o UserDataService aqui!
     Navigator.popUntil(context, (route) => route.isFirst);
   }
-  // --------------------------
 
   @override
   Widget build(BuildContext context) {
@@ -146,13 +141,17 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
                   padding: const EdgeInsets.only(top: 125.0),
                   child: _buildMissionCard(accentColor),
                 ),
-                Image.asset(widget.missao.imageAsset, height: 250),
+                // imagem da missão (se existir)
+                if (widget.missao.imageAsset.isNotEmpty)
+                  Image.asset(widget.missao.imageAsset, height: 250)
+                else
+                  const SizedBox(height: 250),
               ],
             ),
             const SizedBox(height: 30),
             _buildTimerDisplay(accentColor),
             const SizedBox(height: 20),
-            _buildTimerControls(darkColor, context), // Passando o contexto
+            _buildTimerControls(darkColor, context),
             const SizedBox(height: 40),
           ],
         ),
@@ -160,7 +159,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
     );
   }
 
-  // --- CABEÇALHO PADRONIZADO E DINÂMICO ---
+  // Cabeçalho com dados do usuário
   Widget _buildHeader(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final String? uid = authService.usuario?.uid;
@@ -171,15 +170,15 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
         future: uid != null ? _userDataService.getUserData(uid) : Future.value(null),
         builder: (context, snapshot) {
           final usuario = snapshot.data;
-          
+
           String nome = 'Analu!';
           String pontos = '0 pontos';
-          
+
           if (usuario != null) {
             nome = '${usuario.nome.split(' ').first}!';
             pontos = '${usuario.pontos} pontos';
           }
-          
+
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -197,13 +196,13 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Olá, $nome', 
+                            'Olá, $nome',
                             style: const TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold, fontSize: 20),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Vamos viver algo novo hoje?', 
+                            'Vamos viver algo novo hoje?',
                             style: TextStyle(fontFamily: 'Lato', color: Colors.black54),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -281,8 +280,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
           ),
           const SizedBox(height: 15),
           ElevatedButton(
-            // CHAMA A NOVA FUNÇÃO DE ABANDONO!
-            onPressed: () => _abandonarMissao(context), 
+            onPressed: () => _abandonarMissao(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: darkColor,
               foregroundColor: Colors.white,
@@ -293,7 +291,7 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
               elevation: 5,
             ),
             child: const Text(
-              'Abandonar Missão', // Texto mais claro
+              'Abandonar Missão',
               style: TextStyle(fontSize: 16, fontFamily: 'Lato'),
             ),
           ),
@@ -313,11 +311,12 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Mostramos categoriaId (formatado) e dificuldade (do model)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTag(widget.missao.categoryTitle, widget.missao.categoryIcon, accentColor),
-              _buildTag(widget.missao.difficultyAsString, null, accentColor),
+              _buildTag(_formatCategoryLabel(widget.missao.categoryId), null, accentColor),
+              _buildTag(widget.missao.difficulty, null, accentColor),
             ],
           ),
           const SizedBox(height: 20),
@@ -379,5 +378,11 @@ class _MissaoEmAndamentoTelaState extends State<MissaoEmAndamentoTela> {
         ],
       ),
     );
+  }
+
+  // Formata o categoryId para uma label mais amigável (ex: "zen" -> "Zen")
+  String _formatCategoryLabel(String categoryId) {
+    if (categoryId.isEmpty) return '';
+    return categoryId[0].toUpperCase() + categoryId.substring(1);
   }
 }

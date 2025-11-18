@@ -4,83 +4,114 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Classe de exceção personalizada para lidar com erros de autenticação.
-class AuthException implements Exception{
-  String message;
-  AuthException (this.message);
+// Classe de exceção personalizada
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
 }
 
-// Serviço principal de Autenticação e Notificação de Mudanças
-class AuthService extends ChangeNotifier{
+class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  User? usuario; 
+
+  User? usuario;
   bool isloading = true;
 
-  AuthService(){
+  AuthService() {
     _authCheck();
   }
 
-  // Monitora o estado de autenticação (login/logout) do Firebase
-  _authCheck(){
-    _auth.authStateChanges().listen((User? user){
-      usuario = (user == null) ? null: user;
+  // ============================================================
+  // 1) Monitoramento do estado de autenticação
+  // ============================================================
+  void _authCheck() {
+    _auth.authStateChanges().listen((User? user) async {
+      usuario = user;
       isloading = false;
       notifyListeners();
+
+      if (usuario != null) {
+        await _checkUserDocument(); // 🔥 auto-logout se doc não existir
+      }
     });
   }
 
-  // Atualiza a variável local 'usuario' com o usuário logado
-  _getUser(){
+  // Força atualização do usuário local
+  void _getUser() {
     usuario = _auth.currentUser;
     notifyListeners();
   }
 
-  // --- REGISTRO DE NOVO USUÁRIO ---
+  // ============================================================
+  // 2) Verificar se documento no Firestore ainda existe
+  // ============================================================
+  Future<void> _checkUserDocument() async {
+    if (usuario == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(usuario!.uid)
+        .get();
+
+    if (!doc.exists) {
+      await logout(); // 🔥 desloga automaticamente
+    }
+  }
+
+  // ============================================================
+  // 3) Registrar novo usuário
+  // ============================================================
   Future<void> registrar(String nome, String email, String senha) async {
     try {
-      // 1. Cria o usuário no Firebase Authentication
+      // Cria usuário no Authentication
       UserCredential cred = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: senha,
       );
 
-      // 2. Salva os dados adicionais no Firestore (Usando o UID como ID do documento)
-      await FirebaseFirestore.instance.collection('usuarios').doc(cred.user!.uid).set({
-        // O campo 'id' não é estritamente necessário se o UID for usado como chave,
-        // mas mantemos para consistência.
-        'id': cred.user!.uid, 
+      // Cria documento no Firestore
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(cred.user!.uid)
+          .set({
+        'id': cred.user!.uid,
         'nome': nome,
         'email': email,
-        'pontos': 0, // Dados iniciais de progresso!
-        'missoesConcluidas': 0, // Dados iniciais de progresso!
+        'pontos': 0,
+        'missoesConcluidas': 0,
         'criado_em': DateTime.now(),
       });
-      _getUser(); // Atualiza o estado do usuário após o registro
+
+      _getUser();
     } on FirebaseAuthException catch (e) {
-      // Trata erros comuns do Firebase Auth
       throw AuthException(e.message ?? 'Erro ao registrar');
     }
   }
 
-  // --- LOGIN DE USUÁRIO ---
-  login(String email, String senha) async {
-    try{
-      await _auth.signInWithEmailAndPassword(email: email, password: senha);
-      _getUser(); // Atualiza o estado após o login
-
-    }on FirebaseAuthException catch (e){
-        if(e.code =='user-not-found'){
-          throw AuthException('Email não encontrado. Cadastre-se');
-        }else if(e.code == 'wrong-password'){
-            throw AuthException('Senha Incorreta. Tente Novamente');
-        }
-        // Se for outro erro, lança uma exceção genérica
-        throw AuthException(e.message ?? 'Erro ao fazer login');
+  // ============================================================
+  // 4) Login
+  // ============================================================
+  Future<void> login(String email, String senha) async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: senha,
+      );
+      _getUser();
+      await _checkUserDocument(); // 🔥 caso alguém apague o doc depois
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw AuthException('Email não encontrado. Cadastre-se!');
+      } else if (e.code == 'wrong-password') {
+        throw AuthException('Senha incorreta. Tente novamente.');
+      }
+      throw AuthException(e.message ?? 'Erro ao fazer login');
     }
   }
 
-  // --- LOGOUT DE USUÁRIO ---
-  logout() async{
+  // ============================================================
+  // 5) Logout
+  // ============================================================
+  Future<void> logout() async {
     await _auth.signOut();
     _getUser();
   }

@@ -1,15 +1,15 @@
 // lib/telas/detalhe_missao_tela.dart
 
 import 'package:flutter/material.dart';
-import 'package:meu_primeiro_app/models/categorias.dart';
+import 'package:meu_primeiro_app/models/missao.dart';
 import 'package:meu_primeiro_app/telas/missao_em_andamento_tela.dart';
-import 'package:meu_primeiro_app/services/auth_services.dart'; // Para obter UID
-import 'package:meu_primeiro_app/services/user_data_service.dart'; // Para buscar dados
-import 'package:meu_primeiro_app/models/usuarios.dart'; // Para modelo Usuario
+import 'package:meu_primeiro_app/services/auth_services.dart';
+import 'package:meu_primeiro_app/services/user_data_service.dart';
+import 'package:meu_primeiro_app/models/usuarios.dart';
 import 'package:provider/provider.dart';
 
 class DetalheMissaoTela extends StatelessWidget {
-  final DetailedMissionModel missao;
+  final Missao missao;
 
   const DetalheMissaoTela({Key? key, required this.missao}) : super(key: key);
 
@@ -32,7 +32,12 @@ class DetalheMissaoTela extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 125.0),
                   child: _buildMissionCard(accentColor),
                 ),
-                Image.asset(missao.imageAsset, height: 250),
+
+                // imagem
+                if (missao.imageAsset.isNotEmpty)
+                  Image.asset(missao.imageAsset, height: 250)
+                else
+                  const SizedBox(height: 250),
               ],
             ),
             const SizedBox(height: 20),
@@ -44,7 +49,9 @@ class DetalheMissaoTela extends StatelessWidget {
     );
   }
 
-  // --- CABEÇALHO PADRONIZADO E DINÂMICO ---
+  // ================================================================
+  // CABEÇALHO COM NOME E PONTOS DO USUÁRIO
+  // ================================================================
   Widget _buildHeader(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final userDataService = UserDataService();
@@ -56,15 +63,15 @@ class DetalheMissaoTela extends StatelessWidget {
         future: uid != null ? userDataService.getUserData(uid) : Future.value(null),
         builder: (context, snapshot) {
           final usuario = snapshot.data;
-          
+
           String nome = 'Analu!';
           String pontos = '0 pontos';
-          
+
           if (usuario != null) {
             nome = '${usuario.nome.split(' ').first}!';
             pontos = '${usuario.pontos} pontos';
           }
-          
+
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -82,13 +89,13 @@ class DetalheMissaoTela extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Olá, $nome', 
+                            'Olá, $nome',
                             style: const TextStyle(fontFamily: 'Lato', fontWeight: FontWeight.bold, fontSize: 20),
                             overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Vamos viver algo novo hoje?', 
+                            'Vamos viver algo novo hoje?',
                             style: TextStyle(fontFamily: 'Lato', color: Colors.black54),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -121,8 +128,10 @@ class DetalheMissaoTela extends StatelessWidget {
       ),
     );
   }
-  // --------------------------------------------------------------------------
 
+  // ================================================================
+  // BOTÕES
+  // ================================================================
   Widget _buildActionButtons(BuildContext context, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -177,7 +186,10 @@ class DetalheMissaoTela extends StatelessWidget {
     );
   }
 
-  Widget _buildMissionCard(Color accentColor) { 
+  // ================================================================
+  // CARD DA MISSÃO: categoria, dificuldade, título, descrição, tempo
+  // ================================================================
+  Widget _buildMissionCard(Color accentColor) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(25.0),
@@ -191,8 +203,8 @@ class DetalheMissaoTela extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildTag(missao.categoryTitle, missao.categoryIcon, accentColor),
-              _buildTag(missao.difficultyAsString, null, accentColor),
+              _buildTag(_formatCategoryLabel(missao.categoryId), null, accentColor),
+              _buildTag(missao.difficulty, null, accentColor),
             ],
           ),
           const SizedBox(height: 20),
@@ -235,8 +247,8 @@ class DetalheMissaoTela extends StatelessWidget {
       ),
     );
   }
-  
-  Widget _buildTag(String label, IconData? icon, Color color) { 
+
+  Widget _buildTag(String label, IconData? icon, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -254,5 +266,10 @@ class DetalheMissaoTela extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatCategoryLabel(String categoryId) {
+    if (categoryId.isEmpty) return "";
+    return categoryId[0].toUpperCase() + categoryId.substring(1);
   }
 }
