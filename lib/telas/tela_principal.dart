@@ -18,10 +18,16 @@ import 'package:meu_primeiro_app/services/user_data_service.dart';
 import 'package:meu_primeiro_app/telas/detalhe_missao_tela.dart';
 import 'package:meu_primeiro_app/telas/tela_estatisticas.dart';
 import 'package:meu_primeiro_app/telas/tela_login.dart';
-import 'package:meu_primeiro_app/telas/tela_categorias.dart'; // <- 🔥 IMPORTANTE
+import 'package:meu_primeiro_app/telas/tela_categorias.dart';
+import 'package:meu_primeiro_app/telas/modo_foco_config.dart';
 
 class TelaPrincipal extends StatefulWidget {
-  const TelaPrincipal({super.key});
+  final int initialIndex; // NOVO ⭐
+
+  const TelaPrincipal({
+    super.key,
+    this.initialIndex = 0,
+  });
 
   @override
   State<TelaPrincipal> createState() => _TelaPrincipalState();
@@ -38,6 +44,14 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
   late UserDataService _userDataService;
 
   final Random _random = Random();
+
+  @override
+  void initState() {
+    super.initState();
+
+    // ⭐ RECEBE O INDEX DA ABA INICIAL
+    _selectedIndex = widget.initialIndex;
+  }
 
   @override
   void didChangeDependencies() {
@@ -70,7 +84,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     });
   }
 
-  // 🔥 NAVEGAÇÃO
+  // ============================================================
+  // BOTTOM NAVIGATION FUNCIONANDO COM INICIALINDEX ⭐
+  // ============================================================
   void _onItemTapped(int index) {
     if (index == 1) {
       Navigator.push(
@@ -81,14 +97,19 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     }
 
     if (index == 4) {
-      Navigator.pushNamed(context, '/foco-config');
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ModoFocoConfigTela()),
+      );
       return;
     }
 
     setState(() => _selectedIndex = index);
   }
 
-  // 🔥 SELECIONA QUAL TELA EXIBIR
+  // ============================================================
+  // ESCOLHE QUAL TELA EXIBIR
+  // ============================================================
   Widget _buildBody(AuthService auth) {
     switch (_selectedIndex) {
       case 0:
@@ -100,9 +121,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     }
   }
 
-  // ================================
-  // HOME / TELA INICIAL
-  // ================================
+  // ============================================================
+  // HOME
+  // ============================================================
 
   Widget _buildHome(AuthService authService) {
     const Color primaryColor = Color(0xFF3A6A4D);
@@ -161,7 +182,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // MISSÃO DO DIA
+                  // Missão do dia
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: _buildMissionCard(
@@ -173,7 +194,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
 
                   const SizedBox(height: 30),
 
-                  // CATEGORIAS – AGORA CLICÁVEL 🔥🔥🔥
+                  // CATEGORIAS
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: GestureDetector(
@@ -190,6 +211,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                   ),
 
                   const SizedBox(height: 15),
+
                   _buildCategories(),
 
                   const SizedBox(height: 30),
@@ -200,6 +222,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                     child: _buildSectionTitle("Desafios em Destaque"),
                   ),
                   const SizedBox(height: 15),
+
                   _buildFeaturedChallenges(authService),
                 ],
               ),
@@ -210,10 +233,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  // ================================
+  // ============================================================
   // HEADER
-  // ================================
-
+  // ============================================================
   Widget _buildHeader(AuthService auth) {
     if (auth.usuario == null) {
       return const Text(
@@ -263,15 +285,17 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  // ================================
-  // CARTÃO DA MISSÃO
-  // ================================
-
+  // ============================================================
+  // MISSÃO DO DIA
+  // ============================================================
   Widget _buildMissionCard(Missao mission, Color bg, AuthService auth) {
     return InkWell(
       onTap: () {
         if (auth.usuario == null) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => LoginPage()));
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => LoginPage()),
+          );
           return;
         }
 
@@ -303,7 +327,6 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                     ),
                   ),
                   const SizedBox(height: 15),
-
                   const Text(
                     "Missão Diária",
                     style: TextStyle(
@@ -330,8 +353,8 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
             Column(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFFD5E8D4),
                     borderRadius: BorderRadius.circular(15),
@@ -422,10 +445,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     }
   }
 
-  // ================================
-  // CATEGORIAS — horizontal
-  // ================================
-
+  // ============================================================
+  // CATEGORIAS
+  // ============================================================
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -473,10 +495,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  // ================================
+  // ============================================================
   // DESTAQUES
-  // ================================
-
+  // ============================================================
   Widget _buildFeaturedChallenges(AuthService auth) {
     final destaques = _missions.take(3).toList();
 
@@ -518,21 +539,21 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                   children: [
                     Text(
                       m.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontFamily: 'Lato',
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
 
                     Align(
                       alignment: Alignment.bottomRight,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
                           color: const Color(0xFFD5E8D4),
                           borderRadius: BorderRadius.circular(12),
@@ -542,12 +563,12 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                           style: const TextStyle(
                             fontFamily: 'Lato',
                             fontWeight: FontWeight.bold,
-                            fontSize: 12,
                             color: Color(0xFF3A6A4D),
+                            fontSize: 12,
                           ),
                         ),
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -558,10 +579,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  // ================================
+  // ============================================================
   // BOTTOM NAVIGATION
-  // ================================
-
+  // ============================================================
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,

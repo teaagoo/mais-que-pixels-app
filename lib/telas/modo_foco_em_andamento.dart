@@ -1,33 +1,38 @@
 // lib/telas/modo_foco_em_andamento.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../services/auth_services.dart';
+import 'tela_principal.dart';
 
 class ModoFocoEmAndamentoTela extends StatefulWidget {
   final int durationMinutes;
-  const ModoFocoEmAndamentoTela({Key? key, required this.durationMinutes}) : super(key: key);
+  const ModoFocoEmAndamentoTela({Key? key, required this.durationMinutes})
+      : super(key: key);
 
   @override
-  _ModoFocoEmAndamentoTelaState createState() => _ModoFocoEmAndamentoTelaState();
+  State<ModoFocoEmAndamentoTela> createState() =>
+      _ModoFocoEmAndamentoTelaState();
 }
 
-class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela> with WidgetsBindingObserver {
+class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela>
+    with WidgetsBindingObserver {
   late Duration _initialDuration;
   late Duration _remaining;
   Timer? _timer;
   bool _isPaused = false;
 
-  // Palette
-  static const Color deepBlue = Color(0xFF0A0F1F);
-  static const Color deepPurple = Color(0xFF1A1433);
-  static const Color lightGray = Color(0xFFEDEDED);
-  static const Color gold = Color(0xFFF5D76E);
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     _initialDuration = Duration(minutes: widget.durationMinutes);
     _remaining = _initialDuration;
+
     _startTimer();
   }
 
@@ -38,21 +43,18 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela> with 
     super.dispose();
   }
 
-  // Detect app lifecycle to restart timer if user leaves
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // Quando o app vai para background (user saiu)
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      // restart timer as requirement: timer is reset
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       _timer?.cancel();
       setState(() {
         _remaining = _initialDuration;
         _isPaused = false;
       });
 
-      // show a brief message if context mounted
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -69,22 +71,33 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela> with 
   void _startTimer() {
     _timer?.cancel();
     _isPaused = false;
+
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!_isPaused) {
         setState(() {
           if (_remaining.inSeconds > 0) {
-            _remaining = _remaining - const Duration(seconds: 1);
+            _remaining -= const Duration(seconds: 1);
           } else {
             _timer?.cancel();
-            // Quando terminar, mostra um snackbar e volta (ou abre modal)
+
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sessão concluída! Bom trabalho ✨'), duration: Duration(seconds: 2)),
+                const SnackBar(
+                  content: Text("Sessão concluída! Parabéns ✨"),
+                  duration: Duration(seconds: 2),
+                ),
               );
             }
-            // voltar para primeira tela
-            Future.delayed(const Duration(milliseconds: 600), () {
-              if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+
+            Future.delayed(const Duration(milliseconds: 700), () {
+              if (mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const TelaPrincipal(initialIndex: 4),
+                  ),
+                );
+              }
             });
           }
         });
@@ -93,170 +106,281 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela> with 
   }
 
   void _togglePause() {
-    setState(() {
-      _isPaused = !_isPaused;
-    });
+    setState(() => _isPaused = !_isPaused);
   }
 
   void _abandonar() {
     _timer?.cancel();
-    Navigator.popUntil(context, (r) => r.isFirst);
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const TelaPrincipal(initialIndex: 4)),
+    );
   }
 
   String _format(Duration d) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    final h = two(d.inHours);
-    final m = two(d.inMinutes.remainder(60));
-    final s = two(d.inSeconds.remainder(60));
-    // Se horas for "00", pode optar por mostrar só MM:SS; manter padrão HH:MM:SS aqui
-    return '$h:$m:$s';
+    String two(n) => n.toString().padLeft(2, '0');
+    return "${two(d.inHours)}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}";
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: deepBlue,
-      appBar: AppBar(
-        backgroundColor: deepBlue,
-        elevation: 0,
-        title: const Text('Modo Foco', style: TextStyle(fontFamily: 'MochiyPopOne', color: Colors.white)),
-        centerTitle: true,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 14),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: deepPurple,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.emoji_events, color: gold, size: 18),
-                SizedBox(width: 6),
-                Text('590', style: TextStyle(color: gold, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          )
-        ],
+    final auth = Provider.of<AuthService>(context);
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Color(0xFF273C75),
+            Color(0xFF4C5C99),
+          ],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            // Circular illustration
-            Center(
-              child: Container(
-                width: 230,
-                height: 230,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1B2740), Color(0xFF221733)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.45), blurRadius: 18, offset: Offset(0, 8))],
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.self_improvement, size: 76, color: Color(0xFFEDEDED)),
-                      SizedBox(height: 8),
-                      Text('Respire • Foque', style: TextStyle(color: Color(0xFFBFC7D6), fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: _buildAppBar(auth),
+        body: _buildBody(),
+        bottomNavigationBar: _buildBottomNavigationBar(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // APPBAR COM VISUAL SUAVE
+  // ============================================================
+
+  PreferredSizeWidget _buildAppBar(AuthService auth) {
+    if (auth.usuario == null) {
+      return AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: const Text("Modo Foco",
+            style: TextStyle(
+                color: Colors.white, fontFamily: 'MochiyPopOne')),
+      );
+    }
+
+    final doc = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(auth.usuario!.uid);
+
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      title: const Text(
+        "Modo Foco",
+        style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'MochiyPopOne',
+            fontSize: 22),
+      ),
+      actions: [
+        StreamBuilder<DocumentSnapshot>(
+          stream: doc.snapshots(),
+          builder: (context, snapshot) {
+            int pontos = 0;
+
+            if (snapshot.hasData) {
+              final data = snapshot.data!.data() as Map?;
+              pontos = data?["pontos"] ?? 0;
+            }
+
+            return Container(
+              margin: const EdgeInsets.only(right: 14),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(24),
               ),
-            ),
-
-            const SizedBox(height: 30),
-
-            // TIMER DISPLAY
-            Text(
-              _format(_remaining),
-              style: const TextStyle(
-                fontFamily: 'MochiyPopOne',
-                fontSize: 44,
-                color: Colors.white,
-                letterSpacing: 1.2,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // CONTROLS
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30.0),
-              child: Column(
+              child: Row(
                 children: [
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _togglePause,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: lightGray,
-                        foregroundColor: deepBlue,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 4,
-                      ),
-                      child: Text(_isPaused ? 'Retomar' : 'Dar uma pausa', style: const TextStyle(fontFamily: 'Lato', fontSize: 16, fontWeight: FontWeight.w700)),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _abandonar,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: deepPurple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 2,
-                      ),
-                      child: const Text('Abandonar', style: TextStyle(fontFamily: 'Lato', fontSize: 16)),
+                  const Icon(Icons.emoji_events,
+                      color: Colors.amber, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    "$pontos",
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
+            );
+          },
+        )
+      ],
+    );
+  }
+
+  // ============================================================
+  // CORPO — AGORA COMPLETAMENTE SUAVE E MODERNO
+  // ============================================================
+
+  Widget _buildBody() {
+    return SafeArea(
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+
+          Center(
+            child: Container(
+              width: 230,
+              height: 230,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF314B8A),
+                    Color(0xFF232F52)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.35),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.self_improvement,
+                        size: 70, color: Colors.white),
+                    SizedBox(height: 8),
+                    Text(
+                      "Respire • Foque",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
+          ),
 
-            const Spacer(),
+          const SizedBox(height: 30),
 
-            // decorative leaves bottom-right (subtle)
-            Align(
+          Text(
+            _format(_remaining),
+            style: const TextStyle(
+              fontFamily: 'MochiyPopOne',
+              fontSize: 48,
+              color: Colors.white,
+              letterSpacing: 1.2,
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 30),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _togglePause,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text(
+                      _isPaused ? "Retomar" : "Dar uma pausa",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 17,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _abandonar,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.25),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: const Text(
+                      "Abandonar",
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Spacer(),
+
+          Opacity(
+            opacity: 0.18,
+            child: Align(
               alignment: Alignment.bottomRight,
               child: Padding(
-                padding: const EdgeInsets.only(right: 18.0, bottom: 18.0),
-                child: Opacity(
-                  opacity: 0.18,
-                  child: Transform.rotate(
-                    angle: -0.2,
-                    child: Icon(Icons.local_florist, size: 60, color: const Color(0xFF101428)),
+                padding: const EdgeInsets.only(right: 18, bottom: 18),
+                child: Transform.rotate(
+                  angle: -0.2,
+                  child: const Icon(
+                    Icons.local_florist,
+                    size: 60,
+                    color: Colors.black,
                   ),
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: deepPurple,
-        selectedItemColor: gold,
-        unselectedItemColor: Colors.white54,
-        currentIndex: 4,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Estatísticas'),
-          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Histórico'),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Conexões'),
-          BottomNavigationBarItem(icon: Icon(Icons.nights_stay), label: 'Modo Foco'),
+          )
         ],
-        onTap: (i) {},
       ),
+    );
+  }
+
+  // ============================================================
+  // BOTTOM NAV COMBINANDO
+  // ============================================================
+
+  Widget _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      currentIndex: 4,
+      selectedItemColor: Colors.amber,
+      unselectedItemColor: Colors.white54,
+      backgroundColor: Colors.black.withOpacity(0.25),
+      type: BottomNavigationBarType.fixed,
+
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
+        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Estatísticas'),
+        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Histórico'),
+        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Conexões'),
+        BottomNavigationBarItem(icon: Icon(Icons.nights_stay), label: 'Modo Foco'),
+      ],
+
+      onTap: (i) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => TelaPrincipal(initialIndex: i)),
+        );
+      },
     );
   }
 }
