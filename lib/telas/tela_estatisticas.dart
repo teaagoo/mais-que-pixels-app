@@ -1,6 +1,7 @@
 // lib/telas/tela_estatisticas.dart
-// VERSÃO REVISADA COMPLETA – header conectado, ícones alinhados à TelaPrincipal,
-// título "Estatísticas" acima dos cards, animações e painter inclusos.
+// VERSÃO FINAL REVISADA — integra Conquista model + DetalheConquistaTela,
+// conquistas clicáveis, conquistas concluídas em verde claro, cards finais sem ícones,
+// ícones do gráfico alinhados à TelaPrincipal, animações preservadas.
 
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:meu_primeiro_app/services/stats_service.dart';
 import 'package:meu_primeiro_app/services/auth_services.dart';
 import 'package:meu_primeiro_app/services/user_data_service.dart';
 import 'package:meu_primeiro_app/models/usuarios.dart';
+import 'package:meu_primeiro_app/models/conquista.dart';
+import 'package:meu_primeiro_app/telas/detalhe_conquista_tela.dart';
 import 'tela_principal.dart';
 
 class TelaEstatisticas extends StatefulWidget {
@@ -386,9 +389,9 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildCardWithIcon('Missões completas', '$totalMissoes', Icons.check_circle_outline),
-                                _buildCardWithIcon('Ofensiva', '${streak} dias', Icons.whatshot),
-                                _buildCardWithIcon('Recorde', '$recorde pts', Icons.emoji_events),
+                                _buildStatCard('Missões completas', '$totalMissoes'),
+                                _buildStatCard('Ofensiva', '${streak} dias'),
+                                _buildStatCard('Recorde', '$recorde pts'),
                               ],
                             ),
                           ],
@@ -432,6 +435,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
           final c = items[i];
           final titulo = c['titulo'] ?? 'Conquista';
           final desc = c['descricao'] ?? '';
+          // Firestore field detected: 'conquistado' (boolean)
           final ganhou = c['conquistado'] == true || c['unlocked'] == true;
           final bgColor = ganhou ? const Color(0xFFDFF6E9) : Colors.grey.shade200;
           final iconColor = ganhou ? const Color(0xFF3A6A4D) : Colors.grey;
@@ -441,25 +445,37 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
             opacity: _conquistaAnims[i % _conquistaAnims.length],
             child: SlideTransition(
               position: Tween<Offset>(begin: const Offset(0.06, 0), end: Offset.zero).animate(_conquistaAnims[i % _conquistaAnims.length]),
-              child: Container(
-                width: 140,
-                margin: const EdgeInsets.only(right: 12),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(radius: 18, backgroundColor: iconColor, child: const Icon(Icons.emoji_events, color: Colors.white)),
-                    const SizedBox(height: 10),
-                    Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 6),
-                    Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.black54)),
-                  ],
+              child: GestureDetector(
+                onTap: () {
+                  // Conversão segura para o modelo Conquista e navegação
+                  final conquistaModel = Conquista.fromMap({"id": c['id'] ?? c['docId'] ?? '', "titulo": titulo, "descricao": desc, "conquistado": ganhou, "data": c['data']?.toString()});
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DetalheConquistaTela(conquista: conquistaModel),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 140,
+                  margin: const EdgeInsets.only(right: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: borderColor),
+                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(radius: 18, backgroundColor: iconColor, child: const Icon(Icons.emoji_events, color: Colors.white)),
+                      const SizedBox(height: 10),
+                      Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -471,14 +487,14 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
 
   List<Map<String, dynamic>> _defaultConquistasPlaceholders() {
     return [
-      {'titulo': 'Semeador de Gentileza', 'descricao': 'Complete missões gentileza', 'conquistado': false},
-      {'titulo': 'Explorador da Coragem', 'descricao': 'Complete missões coragem', 'conquistado': false},
-      {'titulo': 'Guru da Criatividade', 'descricao': 'Complete missões criativas', 'conquistado': false},
-      {'titulo': 'Mestre do Zen', 'descricao': 'Complete missões zen', 'conquistado': false},
+      {'id': 'g1', 'titulo': 'Semeador de Gentileza', 'descricao': 'Complete missões gentileza', 'conquistado': false},
+      {'id': 'c1', 'titulo': 'Explorador da Coragem', 'descricao': 'Complete missões coragem', 'conquistado': false},
+      {'id': 'cr1', 'titulo': 'Guru da Criatividade', 'descricao': 'Complete missões criativas', 'conquistado': false},
+      {'id': 'z1', 'titulo': 'Mestre do Zen', 'descricao': 'Complete missões zen', 'conquistado': false},
     ];
   }
 
-  Widget _buildCardWithIcon(String titulo, String valor, IconData icon) {
+  Widget _buildStatCard(String titulo, String valor) {
     return Container(
       width: (MediaQuery.of(context).size.width - 60) / 3,
       padding: const EdgeInsets.all(12),
@@ -489,14 +505,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: const Color(0xFF3A6A4D)),
-              const SizedBox(width: 8),
-              Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-            ],
-          ),
+          Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           Text(valor, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
         ],
@@ -528,7 +537,6 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
     );
   }
 }
-
 
 /// Custom painter para o donut/pizza.
 class _DonutPainter extends CustomPainter {
