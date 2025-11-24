@@ -1,12 +1,21 @@
+// lib/telas/tela_categorias.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'package:meu_primeiro_app/models/categorias.dart';
-import 'package:meu_primeiro_app/services/mission_service.dart';
 import 'package:meu_primeiro_app/models/missao.dart';
+
+import 'package:meu_primeiro_app/services/auth_services.dart';
+import 'package:meu_primeiro_app/services/user_data_service.dart';
+import 'package:meu_primeiro_app/services/mission_service.dart';
+
 import 'package:meu_primeiro_app/telas/detalhe_missao_tela.dart';
 
 class TelaCategorias extends StatefulWidget {
-  const TelaCategorias({super.key});
+  final String? initialCategory;
+
+  const TelaCategorias({super.key, this.initialCategory});
 
   @override
   State<TelaCategorias> createState() => _TelaCategoriasState();
@@ -14,17 +23,35 @@ class TelaCategorias extends StatefulWidget {
 
 class _TelaCategoriasState extends State<TelaCategorias> {
   String categoriaSelecionada = mockCategories.first.title;
+
   bool loading = true;
   List<Missao> missoes = [];
+
+  late MissionService missionService;
+  late AuthService authService;
+  late UserDataService userDataService;
 
   @override
   void initState() {
     super.initState();
-    _buscarMissoes();
+
+    if (widget.initialCategory != null) {
+      categoriaSelecionada = widget.initialCategory!;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _buscarMissoes());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    missionService = Provider.of<MissionService>(context, listen: false);
+    authService = Provider.of<AuthService>(context, listen: false);
+    userDataService = Provider.of<UserDataService>(context, listen: false);
   }
 
   Future<void> _buscarMissoes() async {
-    final missionService = Provider.of<MissionService>(context, listen: false);
     setState(() => loading = true);
 
     final result = await missionService.getMissionsByCategory(categoriaSelecionada);
@@ -52,6 +79,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
             _buildCategorySelector(),
 
             const SizedBox(height: 20),
+
             Expanded(child: _buildMissionList()),
           ],
         ),
@@ -59,11 +87,13 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     );
   }
 
-  // =====================
-  // HEADER
-  // =====================
+  // ========================================
+  // HEADER conectado ao Firestore
+  // ========================================
 
   Widget _buildHeader() {
+    final user = authService.usuario;
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Row(
@@ -72,64 +102,92 @@ class _TelaCategoriasState extends State<TelaCategorias> {
             backgroundImage: AssetImage('assets/perfil_analu.png'),
             radius: 25,
           ),
+
           const SizedBox(width: 12),
 
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
-                "Olá, Analu!",
-                style: TextStyle(
-                    fontFamily: "MochiyPopOne",
-                    fontSize: 20,
-                    color: Colors.black87),
-              ),
-              Text(
-                "Vamos viver algo novo hoje?",
-                style: TextStyle(
-                  fontFamily: "Lato",
-                  color: Colors.black54,
-                ),
-              ),
-            ],
-          ),
+          if (user == null)
+            const Text(
+              "Carregando...",
+              style: TextStyle(fontFamily: "MochiyPopOne", fontSize: 20),
+            )
+          else
+            StreamBuilder(
+              stream: userDataService.getUserStream(user.uid),
+              builder: (context, snapshot) {
+                String nome = "Olá!";
+                String pontos = "...";
+
+                if (snapshot.hasData) {
+                  final dados = snapshot.data!;
+                  nome = "Olá, ${dados.nome.split(' ').first}!";
+                  pontos = "${dados.pontos} pontos";
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nome,
+                      style: const TextStyle(
+                        fontFamily: "MochiyPopOne",
+                        fontSize: 20,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      "Vamos viver algo novo hoje?",
+                      style: TextStyle(fontFamily: "Lato", color: Colors.black54),
+                    ),
+                  ],
+                );
+              },
+            ),
 
           const Spacer(),
 
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                    blurRadius: 6,
-                    color: Colors.black.withOpacity(0.1),
-                    offset: const Offset(0, 3))
-              ],
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.emoji_events, color: Colors.amber, size: 20),
-                SizedBox(width: 6),
-                Text(
-                  "590 pontos",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                )
-              ],
-            ),
+          StreamBuilder(
+            stream: user == null ? null : userDataService.getUserStream(user.uid),
+            builder: (context, snapshot) {
+              String pontos = snapshot.hasData ? "${snapshot.data!.pontos}" : "...";
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      blurRadius: 6,
+                      color: Colors.black.withOpacity(0.1),
+                      offset: const Offset(0, 3),
+                    )
+                  ],
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emoji_events, color: Colors.amber, size: 20),
+                    const SizedBox(width: 6),
+                    Text(
+                      "$pontos pts",
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    )
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // =====================
+  // ========================================
   // TÍTULO
-  // =====================
+  // ========================================
 
   Widget _buildTitle() {
     return const Padding(
@@ -145,9 +203,9 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     );
   }
 
-  // =====================
-  // CATEGORIAS
-  // =====================
+  // ========================================
+  // SELETOR DE CATEGORIAS
+  // ========================================
 
   Widget _buildCategorySelector() {
     return SingleChildScrollView(
@@ -155,7 +213,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: mockCategories.map((cat) {
-          final bool selecionada = categoriaSelecionada == cat.title;
+          final selecionada = categoriaSelecionada == cat.title;
 
           return Padding(
             padding: const EdgeInsets.only(right: 12),
@@ -169,7 +227,9 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                 width: 120,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: selecionada ? const Color(0xFF8AAE8A) : const Color(0xFFC5D9C5),
+                  color: selecionada
+                      ? const Color(0xFF8AAE8A)
+                      : const Color(0xFFC5D9C5),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: selecionada
                       ? [
@@ -177,7 +237,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                             blurRadius: 12,
                             offset: const Offset(0, 6),
                             color: Colors.black.withOpacity(0.15),
-                          )
+                          ),
                         ]
                       : [],
                 ),
@@ -203,9 +263,9 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     );
   }
 
-  // =====================
-  // MISSÕES DA CATEGORIA
-  // =====================
+  // ========================================
+  // LISTA DE MISSÕES
+  // ========================================
 
   Widget _buildMissionList() {
     if (loading) {
@@ -215,7 +275,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     if (missoes.isEmpty) {
       return const Center(
         child: Text(
-          "Nenhuma missão nessa categoria ainda 😢",
+          "Nenhuma missão nessa categoria ainda.",
           style: TextStyle(fontSize: 16, color: Colors.black54),
         ),
       );
@@ -231,8 +291,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (_) => DetalheMissaoTela(missao: m)),
+              MaterialPageRoute(builder: (_) => DetalheMissaoTela(missao: m)),
             );
           },
           child: Container(
@@ -263,10 +322,9 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                 ),
                 const SizedBox(height: 6),
 
-                // TAG de dificuldade
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
