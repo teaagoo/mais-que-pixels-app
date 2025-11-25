@@ -1,5 +1,4 @@
 // lib/telas/tela_categorias.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +11,9 @@ import 'package:meu_primeiro_app/services/mission_service.dart';
 
 import 'package:meu_primeiro_app/telas/detalhe_missao_tela.dart';
 
+// ⭐ MENU GLOBAL PADRONIZADO
+import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+
 class TelaCategorias extends StatefulWidget {
   final String? initialCategory;
 
@@ -23,7 +25,6 @@ class TelaCategorias extends StatefulWidget {
 
 class _TelaCategoriasState extends State<TelaCategorias> {
   String categoriaSelecionada = mockCategories.first.title;
-
   bool loading = true;
   List<Missao> missoes = [];
 
@@ -65,7 +66,8 @@ class _TelaCategoriasState extends State<TelaCategorias> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFE5EDE4),
+
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,18 +81,18 @@ class _TelaCategoriasState extends State<TelaCategorias> {
             _buildCategorySelector(),
 
             const SizedBox(height: 20),
-
             Expanded(child: _buildMissionList()),
           ],
         ),
       ),
+
+      bottomNavigationBar: const MainBottomNavBar(currentIndex: 0),
     );
   }
 
-  // ========================================
-  // HEADER conectado ao Firestore
-  // ========================================
-
+  // -------------------------------------------------------
+  // HEADER - mesmo padrão da TelaPrincipal
+  // -------------------------------------------------------
   Widget _buildHeader() {
     final user = authService.usuario;
 
@@ -115,12 +117,12 @@ class _TelaCategoriasState extends State<TelaCategorias> {
               stream: userDataService.getUserStream(user.uid),
               builder: (context, snapshot) {
                 String nome = "Olá!";
-                String pontos = "...";
+                int pontos = 0;
 
                 if (snapshot.hasData) {
                   final dados = snapshot.data!;
                   nome = "Olá, ${dados.nome.split(' ').first}!";
-                  pontos = "${dados.pontos} pontos";
+                  pontos = dados.pontos;
                 }
 
                 return Column(
@@ -130,14 +132,17 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                       nome,
                       style: const TextStyle(
                         fontFamily: "MochiyPopOne",
-                        fontSize: 20,
-                        color: Colors.black87,
+                        fontSize: 22,
+                        color: Color(0xFF3A6A4D),
                       ),
                     ),
                     const SizedBox(height: 2),
                     const Text(
-                      "Vamos viver algo novo hoje?",
-                      style: TextStyle(fontFamily: "Lato", color: Colors.black54),
+                      "Escolha uma categoria!",
+                      style: TextStyle(
+                        fontFamily: "Lato",
+                        color: Colors.black54,
+                      ),
                     ),
                   ],
                 );
@@ -149,20 +154,20 @@ class _TelaCategoriasState extends State<TelaCategorias> {
           StreamBuilder(
             stream: user == null ? null : userDataService.getUserStream(user.uid),
             builder: (context, snapshot) {
-              String pontos = snapshot.hasData ? "${snapshot.data!.pontos}" : "...";
+              int pontos = snapshot.hasData ? snapshot.data!.pontos : 0;
 
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
                       blurRadius: 6,
-                      color: Colors.black.withOpacity(0.1),
                       offset: const Offset(0, 3),
                     )
                   ],
-                  borderRadius: BorderRadius.circular(30),
                 ),
                 child: Row(
                   children: [
@@ -170,11 +175,8 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                     const SizedBox(width: 6),
                     Text(
                       "$pontos pts",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    )
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               );
@@ -185,10 +187,9 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     );
   }
 
-  // ========================================
+  // -------------------------------------------------------
   // TÍTULO
-  // ========================================
-
+  // -------------------------------------------------------
   Widget _buildTitle() {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 20),
@@ -203,41 +204,38 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     );
   }
 
-  // ========================================
-  // SELETOR DE CATEGORIAS
-  // ========================================
-
+  // -------------------------------------------------------
+  // SELETOR DE CATEGORIAS (scroll horizontal)
+  // -------------------------------------------------------
   Widget _buildCategorySelector() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: mockCategories.map((cat) {
-          final selecionada = categoriaSelecionada == cat.title;
+          final bool selecionada = categoriaSelecionada == cat.title;
 
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: GestureDetector(
               onTap: () async {
                 setState(() => categoriaSelecionada = cat.title);
-                await _buscarMissoes();
+                _buscarMissoes();
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 width: 120,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 decoration: BoxDecoration(
-                  color: selecionada
-                      ? const Color(0xFF8AAE8A)
-                      : const Color(0xFFC5D9C5),
+                  color: selecionada ? const Color(0xFF8AAE8A) : const Color(0xFFC4D5C4),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: selecionada
                       ? [
                           BoxShadow(
-                            blurRadius: 12,
-                            offset: const Offset(0, 6),
                             color: Colors.black.withOpacity(0.15),
-                          ),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          )
                         ]
                       : [],
                 ),
@@ -252,7 +250,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
-                    ),
+                    )
                   ],
                 ),
               ),
@@ -263,10 +261,9 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     );
   }
 
-  // ========================================
+  // -------------------------------------------------------
   // LISTA DE MISSÕES
-  // ========================================
-
+  // -------------------------------------------------------
   Widget _buildMissionList() {
     if (loading) {
       return const Center(child: CircularProgressIndicator());
@@ -275,7 +272,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
     if (missoes.isEmpty) {
       return const Center(
         child: Text(
-          "Nenhuma missão nessa categoria ainda.",
+          "Nenhuma missão nesta categoria.",
           style: TextStyle(fontSize: 16, color: Colors.black54),
         ),
       );
@@ -302,8 +299,8 @@ class _TelaCategoriasState extends State<TelaCategorias> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
                   blurRadius: 6,
-                  color: Colors.black.withOpacity(0.1),
                   offset: const Offset(0, 4),
                 )
               ],
@@ -317,14 +314,13 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                     fontFamily: "Lato",
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
                   ),
                 ),
+
                 const SizedBox(height: 6),
 
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -346,8 +342,8 @@ class _TelaCategoriasState extends State<TelaCategorias> {
                     "+${m.points} pontos",
                     style: const TextStyle(
                       fontFamily: "Lato",
-                      color: Colors.black87,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF3A6A4D),
                     ),
                   ),
                 ),

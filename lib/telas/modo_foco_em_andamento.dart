@@ -8,6 +8,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/auth_services.dart';
 import 'tela_principal.dart';
 
+// ⭐ MENU GLOBAL PADRONIZADO
+import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+
 class ModoFocoEmAndamentoTela extends StatefulWidget {
   final int durationMinutes;
   const ModoFocoEmAndamentoTela({Key? key, required this.durationMinutes})
@@ -141,13 +144,15 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela>
         backgroundColor: Colors.transparent,
         appBar: _buildAppBar(auth),
         body: _buildBody(),
-        bottomNavigationBar: _buildBottomNavigationBar(),
+
+        // ⭐ MENU GLOBAL PADRONIZADO
+        bottomNavigationBar: const MainBottomNavBar(currentIndex: 4),
       ),
     );
   }
 
   // ============================================================
-  // APPBAR COM VISUAL SUAVE
+  // APPBAR
   // ============================================================
 
   PreferredSizeWidget _buildAppBar(AuthService auth) {
@@ -218,7 +223,7 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela>
   }
 
   // ============================================================
-  // CORPO — AGORA COMPLETAMENTE SUAVE E MODERNO
+  // CORPO — layout intacto
   // ============================================================
 
   Widget _buildBody() {
@@ -249,10 +254,10 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela>
                   ),
                 ],
               ),
-              child: Center(
+              child: const Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(Icons.self_improvement,
                         size: 70, color: Colors.white),
                     SizedBox(height: 8),
@@ -352,35 +357,6 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela>
           )
         ],
       ),
-    );
-  }
-
-  // ============================================================
-  // BOTTOM NAV COMBINANDO
-  // ============================================================
-
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: 4,
-      selectedItemColor: Colors.amber,
-      unselectedItemColor: Colors.white54,
-      backgroundColor: Colors.black.withOpacity(0.25),
-      type: BottomNavigationBarType.fixed,
-
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Início'),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: 'Estatísticas'),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Histórico'),
-        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Conexões'),
-        BottomNavigationBarItem(icon: Icon(Icons.nights_stay), label: 'Modo Foco'),
-      ],
-
-      onTap: (i) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => TelaPrincipal(initialIndex: i)),
-        );
-      },
     );
   }
 }

@@ -31,7 +31,7 @@ class StatsService {
   }
 
   // =====================================================
-  // 3) PERCENTUAL POR CATEGORIA (CORRIGIDO + ROBUSTO)
+  // 3) PERCENTUAL POR CATEGORIA
   // =====================================================
   Future<Map<String, double>> getPercentualPorCategoria(
       String uid, List<String> categorias) async {
@@ -44,16 +44,12 @@ class StatsService {
       return {for (var c in categorias) c: 0.0};
     }
 
-    // contador
     Map<String, int> contagem = {for (var c in categorias) c: 0};
     int registrosValidos = 0;
 
     for (var doc in snap.docs) {
       final data = doc.data();
 
-      // -----------------------------
-      // CAPTURA DA CATEGORIA
-      // -----------------------------
       String raw = "";
 
       if (data['categoria'] != null && data['categoria'].toString().trim().isNotEmpty) {
@@ -67,13 +63,7 @@ class StatsService {
       }
 
       raw = raw.trim().toLowerCase();
-
-      // -----------------------------
-      // IGNORA REGISTROS ANTIGOS INVÁLIDOS
-      // -----------------------------
-      if (raw.isEmpty) {
-        continue;
-      }
+      if (raw.isEmpty) continue;
 
       final categoriaNorm = _normalize(raw);
 
@@ -205,5 +195,80 @@ class StatsService {
     final snap = await ref.get();
 
     return snap.docs.map((d) => {"id": d.id, ...d.data()}).toList();
+  }
+
+  // =====================================================
+  // 7) ✨ LISTA PARA A TELA "HISTÓRICO"
+  // =====================================================
+  Future<List<Map<String, dynamic>>> getCompletedMissions(String uid) async {
+    final historicoRef =
+        _firestore.collection('usuarios').doc(uid).collection('historico');
+
+    final snap = await historicoRef.get();
+    if (snap.docs.isEmpty) return [];
+
+    List<Map<String, dynamic>> lista = [];
+
+    for (var doc in snap.docs) {
+      final d = doc.data();
+
+      // DATA
+      DateTime? dt;
+      if (d['data'] is Timestamp) {
+        dt = (d['data'] as Timestamp).toDate();
+      } else if (d['data'] is DateTime) {
+        dt = d['data'] as DateTime;
+      }
+
+      // DESCRIÇÃO
+      String descricao = "";
+      if (d['descricao'] != null) descricao = d['descricao'];
+      if (d['description'] != null) descricao = d['description'];
+      if (d['descricaoMissao'] != null) descricao = d['descricaoMissao'];
+
+      // CATEGORIA
+      String categoria = "";
+      if (d['categoria'] != null) categoria = d['categoria'];
+      if (d['categoryTitle'] != null) categoria = d['categoryTitle'];
+      if (d['categoriaId'] != null) categoria = d['categoriaId'];
+
+      // PONTOS
+      int pontos = 0;
+      final rawPontos =
+          d['pontosGanhos'] ?? d['pontos'] ?? d['points'] ?? 0;
+      pontos = (rawPontos is num)
+          ? rawPontos.toInt()
+          : int.tryParse(rawPontos.toString()) ?? 0;
+
+      if (dt != null) {
+        final f = DateFormat("dd 'de' MMMM", "pt_BR");
+        String dataFormatada = f.format(dt);
+        dataFormatada =
+            dataFormatada[0].toUpperCase() + dataFormatada.substring(1);
+
+        lista.add({
+          "data": dataFormatada,
+          "descricao": descricao,
+          "categoria": categoria,
+          "pontos": pontos,
+          "timestamp": dt,
+        });
+      }
+    }
+
+    lista.sort((a, b) {
+      final da = a["timestamp"] as DateTime;
+      final db = b["timestamp"] as DateTime;
+      return db.compareTo(da);
+    });
+
+    return lista
+        .map((m) => {
+              "data": m["data"],
+              "descricao": m["descricao"],
+              "categoria": m["categoria"],
+              "pontos": m["pontos"],
+            })
+        .toList();
   }
 }

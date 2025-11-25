@@ -21,6 +21,9 @@ import 'package:meu_primeiro_app/telas/tela_login.dart';
 import 'package:meu_primeiro_app/telas/tela_categorias.dart';
 import 'package:meu_primeiro_app/telas/modo_foco_config.dart';
 
+// ⭐ IMPORT DO NOVO MENU GLOBAL
+import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+
 class TelaPrincipal extends StatefulWidget {
   final int initialIndex;
 
@@ -80,26 +83,6 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     setState(() {
       _currentMission = _missions[_random.nextInt(_missions.length)];
     });
-  }
-
-  void _onItemTapped(int index) {
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const TelaEstatisticas()),
-      );
-      return;
-    }
-
-    if (index == 4) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ModoFocoConfigTela()),
-      );
-      return;
-    }
-
-    setState(() => _selectedIndex = index);
   }
 
   Widget _buildBody(AuthService auth) {
@@ -452,7 +435,7 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => TelaCategorias(
-                      initialCategory: c.title, // ENVIA A CATEGORIA SELECIONADA
+                      initialCategory: c.title,
                     ),
                   ),
                 );
@@ -567,22 +550,6 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: _onItemTapped,
-      selectedItemColor: const Color(0xFF3A6A4D),
-      unselectedItemColor: Colors.grey,
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Estatísticas"),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: "Histórico"),
-        BottomNavigationBarItem(icon: Icon(Icons.people), label: "Conexões"),
-        BottomNavigationBarItem(icon: Icon(Icons.nights_stay), label: "Foco"),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -591,7 +558,9 @@ class _TelaPrincipalState extends State<TelaPrincipal> {
     return Scaffold(
       backgroundColor: const Color(0xFF3A6A4D),
       body: _buildBody(auth),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+
+      // ⭐ MENU PADRONIZADO
+      bottomNavigationBar: const MainBottomNavBar(currentIndex: 0),
     );
   }
 }

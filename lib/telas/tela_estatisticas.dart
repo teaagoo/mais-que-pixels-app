@@ -1,7 +1,5 @@
 // lib/telas/tela_estatisticas.dart
-// VERSÃO FINAL REVISADA — integra Conquista model + DetalheConquistaTela,
-// conquistas clicáveis, conquistas concluídas em verde claro, cards finais sem ícones,
-// ícones do gráfico alinhados à TelaPrincipal, animações preservadas.
+// HEADER IGUAL AO DA HOME + ÍCONES IGUAIS A TELA PRINCIPAL
 
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -10,10 +8,13 @@ import 'package:provider/provider.dart';
 import 'package:meu_primeiro_app/services/stats_service.dart';
 import 'package:meu_primeiro_app/services/auth_services.dart';
 import 'package:meu_primeiro_app/services/user_data_service.dart';
+
 import 'package:meu_primeiro_app/models/usuarios.dart';
-import 'package:meu_primeiro_app/models/conquista.dart';
-import 'package:meu_primeiro_app/telas/detalhe_conquista_tela.dart';
 import 'tela_principal.dart';
+
+// ------------------------------------------------------------
+// TELA ESTATÍSTICAS
+// ------------------------------------------------------------
 
 class TelaEstatisticas extends StatefulWidget {
   const TelaEstatisticas({Key? key}) : super(key: key);
@@ -24,6 +25,7 @@ class TelaEstatisticas extends StatefulWidget {
 
 class _TelaEstatisticasState extends State<TelaEstatisticas>
     with SingleTickerProviderStateMixin {
+
   final StatsService _statsService = StatsService();
 
   Map<String, double> percentuais = {};
@@ -31,19 +33,16 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
   int streak = 0;
   int recorde = 0;
   List<Map<String, dynamic>> conquistas = [];
-
   bool carregando = true;
 
-  // categorias
   final List<String> keys = ["zen", "coragem", "gentileza", "criatividade"];
   final List<String> nomes = ["Zen", "Coragem", "Gentileza", "Criatividade"];
 
-  // cores das fatias (harmonia com TelaPrincipal)
   final List<Color> cores = [
-    const Color(0xFF8AAE8A), // zen
-    const Color(0xFFFF8A65), // coragem (tons usados no app)
-    const Color(0xFFACD6A5), // gentileza
-    const Color(0xFFBA68C8), // criatividade
+    const Color(0xFF8AAE8A),
+    const Color(0xFFFF8A65),
+    const Color(0xFFACD6A5),
+    const Color(0xFFBA68C8),
   ];
 
   late AnimationController _ctrl;
@@ -51,7 +50,6 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
   late Animation<double> _rotateAnim;
   late List<Animation<double>> _legendFadeAnims;
   late Animation<double> _cardsAnim;
-  late List<Animation<double>> _conquistaAnims;
 
   @override
   void initState() {
@@ -59,7 +57,7 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
 
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: const Duration(milliseconds: 1300),
     );
 
     _donutReveal = CurvedAnimation(
@@ -68,22 +66,21 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
     );
 
     _rotateAnim = Tween<double>(begin: 0, end: 2 * pi).animate(
-      CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.45, curve: Curves.easeOut)),
+      CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.45)),
     );
 
-    _cardsAnim = CurvedAnimation(parent: _ctrl, curve: const Interval(0.65, 1.0, curve: Curves.easeOut));
+    _cardsAnim = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.7, 1.0),
+    );
 
-    _legendFadeAnims = List.generate(keys.length, (i) {
-      final start = 0.35 + i * 0.06;
-      final end = start + 0.18;
-      return CurvedAnimation(parent: _ctrl, curve: Interval(start, end, curve: Curves.easeOut));
-    });
-
-    _conquistaAnims = List.generate(4, (i) {
-      final start = 0.6 + i * 0.05;
-      final end = start + 0.25;
-      return CurvedAnimation(parent: _ctrl, curve: Interval(start, end, curve: Curves.easeOut));
-    });
+    _legendFadeAnims = List.generate(
+      4,
+      (i) => CurvedAnimation(
+        parent: _ctrl,
+        curve: Interval(0.35 + i * 0.08, 0.65),
+      ),
+    );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _carregarDados();
@@ -101,144 +98,130 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
 
     final auth = Provider.of<AuthService>(context, listen: false);
     final uid = auth.usuario?.uid;
+    if (uid == null) return;
 
-    if (uid == null) {
-      setState(() {
-        percentuais = {for (var k in keys) k: 0.0};
-        totalMissoes = 0;
-        streak = 0;
-        recorde = 0;
-        conquistas = [];
-        carregando = false;
-      });
-      _ctrl.reset();
-      return;
-    }
+    final p = await _statsService.getPercentualPorCategoria(uid, keys);
+    final t = await _statsService.getTotalMissoes(uid);
+    final s = await _statsService.getStreak(uid);
+    final r = await _statsService.getRecordePontosDia(uid);
+    final c = await _statsService.getConquistas(uid);
 
-    try {
-      final p = await _stats_serviceSafeGetPercent(uid);
-      final t = await _statsService.getTotalMissoes(uid);
-      final s = await _statsService.getStreak(uid);
-      final r = await _statsService.getRecordePontosDia(uid);
-      final c = await _statsService.getConquistas(uid);
+    setState(() {
+      percentuais = {for (var k in keys) k: (p[k] ?? 0)};
+      totalMissoes = t;
+      streak = s;
+      recorde = r;
+      conquistas = List<Map<String, dynamic>>.from(c ?? []);
+      carregando = false;
+    });
 
-      setState(() {
-        percentuais = {for (var k in keys) k: (p[k] ?? 0).toDouble()};
-        totalMissoes = t;
-        streak = s;
-        recorde = r;
-        conquistas = List<Map<String, dynamic>>.from(c ?? []);
-        carregando = false;
-      });
-
-      _ctrl.reset();
-      await Future.delayed(const Duration(milliseconds: 40));
-      _ctrl.forward();
-    } catch (e) {
-      // ignore: avoid_print
-      print('Erro carregando estatísticas: $e');
-      setState(() {
-        percentuais = {for (var k in keys) k: 0.0};
-        totalMissoes = 0;
-        streak = 0;
-        recorde = 0;
-        conquistas = [];
-        carregando = false;
-      });
-      _ctrl.reset();
-    }
+    _ctrl.forward(from: 0);
   }
 
-  Future<Map<String, double>> _stats_serviceSafeGetPercent(String uid) async {
-    try {
-      return await _statsService.getPercentualPorCategoria(uid, keys);
-    } catch (_) {
-      return {for (var k in keys) k: 0.0};
-    }
-  }
-
-  double _somaPercentuais() {
-    double s = 0;
-    for (var k in keys) s += (percentuais[k] ?? 0.0);
-    return s;
-  }
-
-  // Ícones alinhados aos usados na TelaPrincipal
+  // MAPEAMENTO DE ÍCONES (igual à tela principal)
   IconData _iconPorCategoria(String key) {
     switch (key) {
       case 'zen':
-        return Icons.spa; // small tweak to match look
-      case 'coragem':
-        return Icons.flash_on;
-      case 'gentileza':
-        return Icons.favorite;
+        return Icons.spa;
       case 'criatividade':
-        return Icons.brush;
+        return Icons.lightbulb_outline;
+      case 'gentileza':
+        return Icons.volunteer_activism;
+      case 'coragem':
+        return Icons.terrain;
       default:
         return Icons.flag;
     }
   }
 
+  // ------------------------------------------------------------
+  // BUILD
+  // ------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     const background = Color(0xFFE5EDE4);
-    const accent = Color(0xFF3A6A4D);
+    const green = Color(0xFF3A6A4D);
 
     final auth = Provider.of<AuthService>(context);
-    final uid = auth.usuario?.uid;
+    final userService = Provider.of<UserDataService>(context);
 
     return Scaffold(
       backgroundColor: background,
-      appBar: AppBar(
-        backgroundColor: accent,
-        elevation: 0,
-        title: Row(
-          children: [
-            const CircleAvatar(radius: 18, backgroundImage: AssetImage('assets/perfil_analu.png')),
-            const SizedBox(width: 12),
 
-            // Nome e subtítulo
-            Expanded(
-              child: Consumer<UserDataService>(
-                builder: (context, userData, child) {
-                  if (uid == null) {
-                    return const Text('Olá!', style: TextStyle(color: Colors.white));
-                  }
+      // HEADER IGUAL AO DA HOME
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(110),
+        child: Container(
+          padding: const EdgeInsets.only(top: 20),
+          color: green,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 24,
+                    backgroundImage: AssetImage('assets/perfil_analu.png'),
+                  ),
+                  const SizedBox(width: 12),
 
-                  return StreamBuilder<Usuario?>(
-                    stream: userData.getUserStream(uid),
-                    builder: (context, snap) {
-                      String nome = 'Olá!';
-                      if (snap.hasData) nome = 'Olá, ${snap.data!.nome.split(' ').first}!';
+                  // Olá + Nome
+                  Expanded(
+                    child: StreamBuilder<Usuario?>(
+                      stream: userService.getUserStream(auth.usuario!.uid),
+                      builder: (context, snapshot) {
+                        final nome = snapshot.hasData
+                            ? "Olá, ${snapshot.data!.nome.split(' ').first}!"
+                            : "Olá!";
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(nome, style: const TextStyle(color: Colors.white, fontSize: 14)),
-                          const SizedBox(height: 2),
-                          const Text('Suas Estatísticas', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        ],
+                        return Text(
+                          nome,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontFamily: 'MochiyPopOne',
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Pontos
+                  StreamBuilder<Usuario?>(
+                    stream: userService.getUserStream(auth.usuario!.uid),
+                    builder: (_, snap) {
+                      String pontos = snap.hasData
+                          ? "${snap.data!.pontos} pts"
+                          : "...";
+
+                      return Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.emoji_events,
+                                color: Colors.amber, size: 18),
+                            const SizedBox(width: 6),
+                            Text(
+                              pontos,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
                       );
                     },
-                  );
-                },
+                  )
+                ],
               ),
             ),
-
-            // Badge de pontos (stream)
-            Consumer2<AuthService, UserDataService>(
-              builder: (context, authS, userData, child) {
-                if (uid == null) return _badgePontos('0');
-                return StreamBuilder<Usuario?>(
-                  stream: userData.getUserStream(uid),
-                  builder: (context, snap) {
-                    String pontos = snap.hasData ? snap.data!.pontos.toString() : '0';
-                    return _badgePontos(pontos);
-                  },
-                );
-              },
-            ),
-          ],
+          ),
         ),
       ),
 
@@ -246,287 +229,300 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _carregarDados,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-
-                    // TÍTULO PRINCIPAL
-                    const Text(
-                      'Seu Progresso',
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xFF3A6A4D)),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // DONUT
-                    Center(
-                      child: Column(
-                        children: [
-                          SizedBox(
-                            width: 220,
-                            height: 220,
-                            child: AnimatedBuilder(
-                              animation: _ctrl,
-                              builder: (context, child) {
-                                final revealFactor = _donutReveal.value.clamp(0.0, 1.0);
-                                final rotation = _rotateAnim.value;
-                                final animatedMap = <String, double>{};
-                                final total = _somaPercentuais();
-                                if (total <= 0.0001) {
-                                  for (var k in keys) animatedMap[k] = 0.0;
-                                } else {
-                                  for (var k in keys) {
-                                    animatedMap[k] = (percentuais[k] ?? 0.0) * revealFactor;
-                                  }
-                                }
-
-                                return Transform.rotate(
-                                  angle: rotation,
-                                  child: CustomPaint(
-                                    painter: _DonutPainter(percentuais: animatedMap, colors: cores, keys: keys),
-                                    child: Center(
-                                      child: Container(
-                                        width: 120,
-                                        height: 120,
-                                        decoration: BoxDecoration(
-                                          color: background,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8)],
-                                        ),
-                                        child: const Center(
-                                          child: Icon(Icons.spa, size: 36, color: Color(0xFF3A6A4D)),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 10,
-                            alignment: WrapAlignment.center,
-                            children: List.generate(keys.length, (i) {
-                              final k = keys[i];
-                              final pct = (percentuais[k] ?? 0).toDouble();
-                              final filled = _somaPercentuais() > 0;
-                              final color = filled ? cores[i] : Colors.grey.shade400;
-
-                              return FadeTransition(
-                                opacity: _legendFadeAnims[i],
-                                child: SlideTransition(
-                                  position: Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero).animate(_legendFadeAnims[i]),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 14,
-                                          backgroundColor: color,
-                                          child: Icon(_iconPorCategoria(k), size: 16, color: Colors.white),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(nomes[i], style: const TextStyle(fontWeight: FontWeight.bold)),
-                                            TweenAnimationBuilder<double>(
-                                              tween: Tween<double>(begin: 0, end: pct),
-                                              duration: const Duration(milliseconds: 700),
-                                              builder: (context, val, child) {
-                                                return Text("${val.toStringAsFixed(0)}%", style: const TextStyle(fontSize: 12, color: Colors.black54));
-                                              },
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // CONQUISTAS
-                    const Text('Suas Conquistas', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF3A6A4D))),
-                    const SizedBox(height: 12),
-                    _buildConquistasRowAnimated(),
-
-                    const SizedBox(height: 26),
-
-                    FadeTransition(
-                      opacity: _cardsAnim,
-                      child: SlideTransition(
-                        position: Tween<Offset>(begin: const Offset(0, 0.12), end: Offset.zero).animate(_cardsAnim),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Título "Estatísticas" acima dos cards (solicitado)
-                            const Padding(
-                              padding: EdgeInsets.only(left: 4, bottom: 8),
-                              child: Text('Estatísticas', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF3A6A4D))),
-                            ),
-
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                _buildStatCard('Missões completas', '$totalMissoes'),
-                                _buildStatCard('Ofensiva', '${streak} dias'),
-                                _buildStatCard('Recorde', '$recorde pts'),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+              child: _buildBody(background),
             ),
 
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _badgePontos(String pontos) {
-    return Container(
-      margin: const EdgeInsets.only(left: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-      child: Row(
+  // ------------------------------------------------------------
+  // CORPO
+  // ------------------------------------------------------------
+
+  Widget _buildBody(Color background) {
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.emoji_events, color: Color(0xFFF5D76E), size: 18),
-          const SizedBox(width: 6),
-          Text('$pontos pts', style: const TextStyle(fontWeight: FontWeight.bold)),
+          // TÍTULO PRINCIPAL LOGO ABAIXO DO HEADER
+
+          const SizedBox(height: 25),
+
+          _buildDonut(background),
+
+          const SizedBox(height: 30),
+
+          const Text(
+            "Suas Conquistas",
+            style: TextStyle(
+              fontSize: 22,
+              fontFamily: 'MochiyPopOne',
+              color: Color(0xFF3A6A4D),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          _buildConquistas(),
+
+          const SizedBox(height: 28),
+
+          FadeTransition(
+            opacity: _cardsAnim,
+            child: Column(
+              children: [
+                const Text(
+            "Estatísticas",
+            style: TextStyle(
+              fontSize: 22,
+              fontFamily: 'MochiyPopOne',
+              color: Color(0xFF3A6A4D),
+            ),
+          ),
+                const SizedBox(height: 14),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildStatCard("Missões", "$totalMissoes"),
+                    _buildStatCard("Streak", "$streak dias"),
+                    _buildStatCard("Recorde", "$recorde pts"),
+                  ],
+                )
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 40),
         ],
       ),
     );
   }
 
-  Widget _buildConquistasRowAnimated() {
-    final items = conquistas.isEmpty ? _defaultConquistasPlaceholders() : conquistas;
+  // ------------------------------------------------------------
+  // DONUT + LEGENDA
+  // ------------------------------------------------------------
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(top: 8, bottom: 4),
-      child: Row(
-        children: List.generate(items.length, (i) {
-          final c = items[i];
-          final titulo = c['titulo'] ?? 'Conquista';
-          final desc = c['descricao'] ?? '';
-          // Firestore field detected: 'conquistado' (boolean)
-          final ganhou = c['conquistado'] == true || c['unlocked'] == true;
-          final bgColor = ganhou ? const Color(0xFFDFF6E9) : Colors.grey.shade200;
-          final iconColor = ganhou ? const Color(0xFF3A6A4D) : Colors.grey;
-          final borderColor = ganhou ? const Color(0xFF3A6A4D) : Colors.grey.shade300;
+  Widget _buildDonut(Color background) {
+    return Center(
+      child: Column(
+        children: [
+          SizedBox(
+            width: 220,
+            height: 220,
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (_, __) {
+                final reveal = _donutReveal.value;
+                final rotation = _rotateAnim.value;
 
-          return FadeTransition(
-            opacity: _conquistaAnims[i % _conquistaAnims.length],
-            child: SlideTransition(
-              position: Tween<Offset>(begin: const Offset(0.06, 0), end: Offset.zero).animate(_conquistaAnims[i % _conquistaAnims.length]),
-              child: GestureDetector(
-                onTap: () {
-                  // Conversão segura para o modelo Conquista e navegação
-                  final conquistaModel = Conquista.fromMap({"id": c['id'] ?? c['docId'] ?? '', "titulo": titulo, "descricao": desc, "conquistado": ganhou, "data": c['data']?.toString()});
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DetalheConquistaTela(conquista: conquistaModel),
+                final animated =
+                    {for (var k in keys) k: (percentuais[k] ?? 0) * reveal};
+
+                return Transform.rotate(
+                  angle: rotation,
+                  child: CustomPaint(
+                    painter: _DonutPainter(
+                      percentuais: animated,
+                      colors: cores,
+                      keys: keys,
                     ),
-                  );
-                },
-                child: Container(
-                  width: 140,
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: bgColor,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: borderColor),
-                    boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+                    child: Center(
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: background,
+                        ),
+                        child: const Icon(
+                          Icons.spa,
+                          size: 40,
+                          color: Color(0xFF3A6A4D),
+                        ),
+                      ),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Wrap(
+            spacing: 14,
+            runSpacing: 10,
+            alignment: WrapAlignment.center,
+            children: List.generate(keys.length, (i) {
+              final key = keys[i];
+              final pct = percentuais[key] ?? 0;
+
+              return FadeTransition(
+                opacity: _legendFadeAnims[i],
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 6)
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircleAvatar(radius: 18, backgroundColor: iconColor, child: const Icon(Icons.emoji_events, color: Colors.white)),
-                      const SizedBox(height: 10),
-                      Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
-                      Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                      CircleAvatar(
+                        radius: 15,
+                        backgroundColor: cores[i],
+                        child: Icon(
+                          _iconPorCategoria(key),
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(nomes[i],
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          Text("${pct.toStringAsFixed(0)}%",
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.black54)),
+                        ],
+                      )
                     ],
                   ),
                 ),
-              ),
-            ),
-          );
-        }),
+              );
+            }),
+          )
+        ],
       ),
     );
   }
 
-  List<Map<String, dynamic>> _defaultConquistasPlaceholders() {
-    return [
-      {'id': 'g1', 'titulo': 'Semeador de Gentileza', 'descricao': 'Complete missões gentileza', 'conquistado': false},
-      {'id': 'c1', 'titulo': 'Explorador da Coragem', 'descricao': 'Complete missões coragem', 'conquistado': false},
-      {'id': 'cr1', 'titulo': 'Guru da Criatividade', 'descricao': 'Complete missões criativas', 'conquistado': false},
-      {'id': 'z1', 'titulo': 'Mestre do Zen', 'descricao': 'Complete missões zen', 'conquistado': false},
-    ];
+  // ------------------------------------------------------------
+  // CONQUISTAS
+  // ------------------------------------------------------------
+
+  Widget _buildConquistas() {
+    final items = conquistas.isEmpty
+        ? [
+            {'titulo': 'Semeador de Gentileza', 'descricao': 'Complete missões gentileza', 'conquistado': false},
+            {'titulo': 'Explorador da Coragem', 'descricao': 'Complete missões coragem', 'conquistado': false},
+            {'titulo': 'Guru da Criatividade', 'descricao': 'Complete missões criativas', 'conquistado': false},
+            {'titulo': 'Mestre do Zen', 'descricao': 'Complete missões zen', 'conquistado': false},
+          ]
+        : conquistas;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: items.map((c) {
+          final ganhou = c['conquistado'] == true;
+
+          return Container(
+            width: 140,
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ganhou ? const Color(0xFFDFF6E9) : Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ganhou ? const Color(0xFF3A6A4D) : Colors.grey.shade300,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor:
+                      ganhou ? const Color(0xFF3A6A4D) : Colors.grey,
+                  child: const Icon(Icons.emoji_events, color: Colors.white),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  c['titulo'],
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  c['descricao'],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: Colors.black54),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
   }
+
+  // ------------------------------------------------------------
+  // CARD DE ESTATÍSTICAS
+  // ------------------------------------------------------------
 
   Widget _buildStatCard(String titulo, String valor) {
     return Container(
       width: (MediaQuery.of(context).size.width - 60) / 3,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
       ),
       child: Column(
         children: [
-          Text(titulo, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text(valor, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(
+            titulo,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            valor,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // ------------------------------------------------------------
+  // BOTTOM NAV
+  // ------------------------------------------------------------
+
   Widget _buildBottomNavigationBar() {
     return BottomNavigationBar(
       currentIndex: 1,
-      onTap: (index) {
-        if (index == 1) return;
-        if (index == 4) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => const TelaPrincipal(initialIndex: 4)));
-          return;
-        }
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => TelaPrincipal(initialIndex: index)));
-      },
       selectedItemColor: const Color(0xFF3A6A4D),
       unselectedItemColor: Colors.grey,
       type: BottomNavigationBarType.fixed,
+      onTap: (index) {
+        if (index == 1) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => TelaPrincipal(initialIndex: index)),
+        );
+      },
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
         BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Estatísticas"),
@@ -538,56 +534,65 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
   }
 }
 
-/// Custom painter para o donut/pizza.
+// ------------------------------------------------------------
+// PINTURA DO DONUT
+// ------------------------------------------------------------
+
 class _DonutPainter extends CustomPainter {
   final Map<String, double> percentuais;
   final List<Color> colors;
   final List<String> keys;
 
-  _DonutPainter({required this.percentuais, required this.colors, required this.keys});
+  _DonutPainter({
+    required this.percentuais,
+    required this.colors,
+    required this.keys,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final center = rect.center;
+    final center = size.center(Offset.zero);
     final radius = size.width / 2;
-    final ringWidth = radius * 0.34;
+    final ringWidth = radius * 0.33;
 
-    final paintBg = Paint()
+    final bgPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = ringWidth
       ..color = Colors.grey.shade300;
 
+    canvas.drawCircle(center, radius - ringWidth / 2, bgPaint);
+
+    final total = percentuais.values.fold(0.0, (a, b) => a + b);
+    if (total <= 0) return;
+
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = ringWidth
-      ..strokeCap = StrokeCap.butt;
+      ..strokeWidth = ringWidth;
 
-    final total = keys.fold<double>(0, (s, k) => s + (percentuais[k] ?? 0.0));
+    double start = -pi / 2;
 
-    if (total <= 0.0001) {
-      canvas.drawCircle(center, radius - ringWidth / 2, paintBg);
-      final innerPaint = Paint()..color = Colors.white;
-      canvas.drawCircle(center, radius - ringWidth - 6, innerPaint);
-      return;
-    }
-
-    double startRadian = -pi / 2;
     for (int i = 0; i < keys.length; i++) {
-      final k = keys[i];
-      final value = (percentuais[k] ?? 0.0).clamp(0.0, 100.0);
-      final sweep = (value / total) * 2 * pi;
-      paint.color = colors[i % colors.length];
-      canvas.drawArc(Rect.fromCircle(center: center, radius: radius - ringWidth / 2), startRadian, sweep, false, paint);
-      startRadian += sweep;
-    }
+      final valor = percentuais[keys[i]] ?? 0;
+      final sweep = (valor / total) * 2 * pi;
 
-    final innerPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(center, radius - ringWidth - 6, innerPaint);
+      paint.color = colors[i];
+      canvas.drawArc(
+        Rect.fromCircle(
+          center: center,
+          radius: radius - ringWidth / 2,
+        ),
+        start,
+        sweep,
+        false,
+        paint,
+      );
+
+      start += sweep;
+    }
   }
 
   @override
-  bool shouldRepaint(covariant _DonutPainter oldDelegate) {
+  bool shouldRepaint(_DonutPainter oldDelegate) {
     return oldDelegate.percentuais != percentuais;
   }
 }

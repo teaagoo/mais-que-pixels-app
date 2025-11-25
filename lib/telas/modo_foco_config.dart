@@ -8,6 +8,9 @@ import '../services/auth_services.dart';
 import 'modo_foco_em_andamento.dart';
 import 'tela_principal.dart';
 
+// ⭐ IMPORTAÇÃO DO MENU GLOBAL
+import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+
 class ModoFocoConfigTela extends StatefulWidget {
   const ModoFocoConfigTela({Key? key}) : super(key: key);
 
@@ -27,8 +30,8 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color(0xFF273C75), // azul escuro
-            Color(0xFF4C5C99), // azul médio
+            Color(0xFF273C75),
+            Color(0xFF4C5C99),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -41,90 +44,88 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
         body: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-
-                  const Center(
-                    child: Text(
-                      "Modo Foco",
-                      style: TextStyle(
-                        fontFamily: 'MochiyPopOne',
-                        fontSize: 32,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Center(
+                  child: Text(
+                    "Modo Foco",
+                    style: TextStyle(
+                      fontFamily: 'MochiyPopOne',
+                      fontSize: 32,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 18),
+                const SizedBox(height: 18),
 
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      children: const [
-                        Text(
-                          "Focar nem sempre é fácil, especialmente com uma tela por perto 24 horas por dia. "
-                          "Com o nosso Modo Foco, você pode definir um timer exclusivo para manter a concentração total!",
-                          style: TextStyle(
-                            fontSize: 14,
-                            height: 1.5,
-                            color: Colors.white,
-                          ),
-                          textAlign: TextAlign.justify,
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    children: const [
+                      Text(
+                        "Focar nem sempre é fácil, especialmente com uma tela por perto 24 horas por dia. "
+                        "Com o nosso Modo Foco, você pode definir um timer exclusivo para manter a concentração total!",
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1.5,
+                          color: Colors.white,
                         ),
-                        SizedBox(height: 14),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("🚨", style: TextStyle(fontSize: 18)),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                "Atenção: evitar sair do aplicativo para entrar em redes sociais. "
-                                "Se isso acontecer, o timer será reiniciado automaticamente.",
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  height: 1.4,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                        textAlign: TextAlign.justify,
+                      ),
+                      SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("🚨", style: TextStyle(fontSize: 18)),
+                          SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "Atenção: evitar sair do aplicativo para entrar em redes sociais. "
+                              "Se isso acontecer, o timer será reiniciado automaticamente.",
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 1.4,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
+                ),
 
-                  const SizedBox(height: 26),
+                const SizedBox(height: 26),
 
-                  _buildGridOptions(),
+                _buildGridOptions(),
 
-                  const SizedBox(height: 26),
+                const SizedBox(height: 26),
 
-                  _buildStartButton(context),
-                  const SizedBox(height: 20),
-                ],
-              ),
+                _buildStartButton(context),
+                const SizedBox(height: 20),
+              ],
             ),
           ),
         ),
 
-        bottomNavigationBar: _buildBottomNav(),
+        // ⭐ AQUI ENTRA O MENU PADRONIZADO
+        bottomNavigationBar: const MainBottomNavBar(currentIndex: 4),
       ),
     );
   }
 
-  // =============================
+  // ==================================================
   // APP BAR
-  // =============================
+  // ==================================================
 
   PreferredSizeWidget _buildAppBar(AuthService auth) {
     if (auth.usuario == null) {
@@ -153,7 +154,7 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
           if (snapshot.hasData) {
             final data = snapshot.data!.data() as Map?;
             if (data != null) {
-              nome = "Olá, ${data['nome'].split(" ").first}!";
+              nome = "Olá, ${data['nome'].split(' ').first}!";
               pontos = data['pontos'] ?? 0;
             }
           }
@@ -186,7 +187,7 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
                       fontSize: 12,
                       color: Color(0xFFDBE1F2),
                     ),
-                  )
+                  ),
                 ],
               )
             ],
@@ -213,7 +214,8 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.emoji_events, color: Colors.amber, size: 18),
+                  const Icon(Icons.emoji_events,
+                      color: Colors.amber, size: 18),
                   const SizedBox(width: 6),
                   Text(
                     '$pontos',
@@ -226,14 +228,14 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
               ),
             );
           },
-        )
+        ),
       ],
     );
   }
 
-  // =============================
+  // ==================================================
   // OPÇÕES DE TEMPO
-  // =============================
+  // ==================================================
 
   Widget _buildGridOptions() {
     return GridView.count(
@@ -255,9 +257,7 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         decoration: BoxDecoration(
-          color: selected
-              ? Colors.white
-              : Colors.white.withOpacity(0.15),
+          color: selected ? Colors.white : Colors.white.withOpacity(0.15),
           borderRadius: BorderRadius.circular(12),
           boxShadow: selected
               ? [
@@ -283,9 +283,9 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
     );
   }
 
-  // =============================
-  // BOTÃO "VAMOS COMEÇAR!"
-  // =============================
+  // ==================================================
+  // BOTÃO PRINCIPAL
+  // ==================================================
 
   Widget _buildStartButton(BuildContext context) {
     return SizedBox(
@@ -317,33 +317,6 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
           ),
         ),
       ),
-    );
-  }
-
-  // =============================
-  // NAV BAR
-  // =============================
-
-  Widget _buildBottomNav() {
-    return BottomNavigationBar(
-      currentIndex: 4,
-      selectedItemColor: Colors.amber,
-      unselectedItemColor: Colors.white54,
-      backgroundColor: Colors.black.withOpacity(0.3),
-      type: BottomNavigationBarType.fixed,
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Início"),
-        BottomNavigationBarItem(icon: Icon(Icons.bar_chart), label: "Estatísticas"),
-        BottomNavigationBarItem(icon: Icon(Icons.history), label: "Histórico"),
-        BottomNavigationBarItem(icon: Icon(Icons.people), label: "Conexões"),
-        BottomNavigationBarItem(icon: Icon(Icons.nights_stay), label: "Foco"),
-      ],
-      onTap: (index) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => TelaPrincipal(initialIndex: index)),
-        );
-      },
     );
   }
 }
