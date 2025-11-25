@@ -1,4 +1,3 @@
-// lib/services/stats_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
@@ -32,7 +31,7 @@ class StatsService {
   }
 
   // =====================================================
-  // 3) PERCENTUAL POR CATEGORIA (ROBUSTO)
+  // 3) PERCENTUAL POR CATEGORIA (CORRIGIDO + ROBUSTO)
   // =====================================================
   Future<Map<String, double>> getPercentualPorCategoria(
       String uid, List<String> categorias) async {
@@ -47,13 +46,17 @@ class StatsService {
 
     // contador
     Map<String, int> contagem = {for (var c in categorias) c: 0};
+    int registrosValidos = 0;
 
     for (var doc in snap.docs) {
       final data = doc.data();
 
+      // -----------------------------
+      // CAPTURA DA CATEGORIA
+      // -----------------------------
       String raw = "";
 
-      if (data['categoria'] != null) {
+      if (data['categoria'] != null && data['categoria'].toString().trim().isNotEmpty) {
         raw = data['categoria'].toString();
       } else if (data['categoriaId'] != null) {
         raw = data['categoriaId'].toString();
@@ -63,21 +66,33 @@ class StatsService {
         raw = data['categoryTitle'].toString();
       }
 
+      raw = raw.trim().toLowerCase();
+
+      // -----------------------------
+      // IGNORA REGISTROS ANTIGOS INVÁLIDOS
+      // -----------------------------
+      if (raw.isEmpty) {
+        continue;
+      }
+
       final categoriaNorm = _normalize(raw);
 
-      // compara com as categorias esperadas
       for (var cat in categorias) {
         if (_normalize(cat) == categoriaNorm) {
           contagem[cat] = contagem[cat]! + 1;
+          registrosValidos++;
           break;
         }
       }
     }
 
-    final total = snap.docs.length.toDouble();
+    if (registrosValidos == 0) {
+      return {for (var c in categorias) c: 0.0};
+    }
 
     return {
-      for (var c in categorias) c: total > 0 ? (contagem[c]! / total) * 100 : 0.0
+      for (var c in categorias)
+        c: (contagem[c]! / registrosValidos) * 100
     };
   }
 
@@ -110,7 +125,6 @@ class StatsService {
 
     if (snap.docs.isEmpty) return 0;
 
-    // coleta datas normalizadas
     Set<DateTime> datas = {};
 
     for (var doc in snap.docs) {
