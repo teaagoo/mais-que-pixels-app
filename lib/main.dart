@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter/rendering.dart'; // <-- necessário para debugPaintSizeEnabled
+import 'package:flutter/rendering.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // NOVO IMPORT
 
 // SERVICES
 import 'package:meu_primeiro_app/services/auth_services.dart';
@@ -18,17 +19,16 @@ import 'package:meu_primeiro_app/telas/tela_principal.dart';
 import 'package:meu_primeiro_app/telas/modo_foco_config.dart';
 import 'package:meu_primeiro_app/telas/modo_foco_em_andamento.dart';
 import 'package:meu_primeiro_app/telas/tela_historico.dart';
+import 'package:meu_primeiro_app/telas/boas_vindas.dart'; // CERTIFIQUE-SE QUE ESSA TELA ESTÁ IMPORTADA
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // REMOVE O AVISO AMARELO E PRETO (debug overflow)
   debugPaintSizeEnabled = false;
 
-  // Necessário para formatar datas em pt_BR (resolve erro do histórico)
   await initializeDateFormatting('pt_BR', null);
 
-  // Firebase
+  // Inicializa o Firebase
   await Firebase.initializeApp();
 
   runApp(
@@ -45,14 +45,15 @@ Future<void> main() async {
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({super.key});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-
-      home: AuthCheck(),
+      
+      // A home agora é um novo widget que verifica se é a primeira abertura.
+      home: CheckFirstOpen(),
 
       routes: {
         '/principal': (context) => const TelaPrincipal(),
@@ -63,5 +64,52 @@ class MyApp extends StatelessWidget {
         '/historico': (context) => const TelaHistorico(),
       },
     );
+  }
+}
+
+// NOVO WIDGET: Lógica para forçar a tela de Boas-Vindas na primeira vez
+class CheckFirstOpen extends StatefulWidget {
+  const CheckFirstOpen({super.key});
+
+  @override
+  State<CheckFirstOpen> createState() => _CheckFirstOpenState();
+}
+
+class _CheckFirstOpenState extends State<CheckFirstOpen> {
+  bool? _isFirstOpen;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfFirstOpen();
+  }
+
+  void _checkIfFirstOpen() async {
+    final prefs = await SharedPreferences.getInstance();
+    // Verifica se a chave 'hasSeenWelcome' existe
+    final hasSeenWelcome = prefs.getBool('hasSeenWelcome') ?? false;
+
+    setState(() {
+      // Se for false (o padrão se for a primeira vez), a tela inicial é Boas-Vindas.
+      _isFirstOpen = !hasSeenWelcome;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isFirstOpen == null) {
+      // Exibe um loading enquanto a verificação é feita
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_isFirstOpen == true) {
+      // Se for a primeira vez, mostra a tela de Boas-Vindas.
+      return const BoasVindasTela(); // Assumindo que a classe é BoasVindasTela
+    } else {
+      // Caso contrário, usa o fluxo de autenticação padrão (AuthCheck).
+      return AuthCheck();
+    }
   }
 }

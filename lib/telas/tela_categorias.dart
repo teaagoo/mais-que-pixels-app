@@ -13,6 +13,7 @@ import 'package:meu_primeiro_app/telas/detalhe_missao_tela.dart';
 
 // ⭐ MENU GLOBAL PADRONIZADO
 import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart'; // NOVO: Import do ProfileButton
 
 class TelaCategorias extends StatefulWidget {
   final String? initialCategory;
@@ -100,10 +101,8 @@ class _TelaCategoriasState extends State<TelaCategorias> {
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          const CircleAvatar(
-            backgroundImage: AssetImage('assets/perfil_analu.png'),
-            radius: 25,
-          ),
+          // ⭐ ALTERAÇÃO: ProfileButton no lugar do Avatar estático
+          const ProfileButton(),
 
           const SizedBox(width: 12),
 
@@ -117,12 +116,10 @@ class _TelaCategoriasState extends State<TelaCategorias> {
               stream: userDataService.getUserStream(user.uid),
               builder: (context, snapshot) {
                 String nome = "Olá!";
-                int pontos = 0;
 
                 if (snapshot.hasData) {
                   final dados = snapshot.data!;
                   nome = "Olá, ${dados.nome.split(' ').first}!";
-                  pontos = dados.pontos;
                 }
 
                 return Column(
@@ -151,6 +148,7 @@ class _TelaCategoriasState extends State<TelaCategorias> {
 
           const Spacer(),
 
+          // Pontos (mantido)
           StreamBuilder(
             stream: user == null ? null : userDataService.getUserStream(user.uid),
             builder: (context, snapshot) {

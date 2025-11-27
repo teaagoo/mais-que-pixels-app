@@ -115,4 +115,16 @@ class AuthService extends ChangeNotifier {
     await _auth.signOut();
     _getUser();
   }
+
+  // ============================================================
+  // 6) Reautenticação (NOVO MÉTODO PARA TELA DE PERFIL)
+  // ============================================================
+  // Necessário para operações sensíveis como mudar senha/email ou excluir conta.
+  Future<void> reauthenticateUser(User user, String password) async {
+    final AuthCredential credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: password,
+    );
+    await user.reauthenticateWithCredential(credential);
+  }
 }

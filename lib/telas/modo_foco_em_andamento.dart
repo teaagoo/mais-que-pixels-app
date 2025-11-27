@@ -10,6 +10,7 @@ import 'tela_principal.dart';
 
 // ⭐ MENU GLOBAL PADRONIZADO
 import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart'; // NOVO: Import do ProfileButton
 
 class ModoFocoEmAndamentoTela extends StatefulWidget {
   final int durationMinutes;
@@ -182,6 +183,8 @@ class _ModoFocoEmAndamentoTelaState extends State<ModoFocoEmAndamentoTela>
             fontFamily: 'MochiyPopOne',
             fontSize: 22),
       ),
+      leading: const ProfileButton(), // ⭐ ALTERAÇÃO: ProfileButton como leading
+
       actions: [
         StreamBuilder<DocumentSnapshot>(
           stream: doc.snapshots(),

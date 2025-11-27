@@ -6,6 +6,7 @@ import 'package:meu_primeiro_app/services/auth_services.dart';
 import 'package:meu_primeiro_app/services/user_data_service.dart';
 import 'package:meu_primeiro_app/models/missao.dart';
 import 'package:provider/provider.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart'; // NOVO: Import do ProfileButton
 
 class MissaoConcluidaTela extends StatelessWidget {
   final Missao missao;
@@ -127,10 +128,8 @@ class MissaoConcluidaTela extends StatelessWidget {
               Expanded(
                 child: Row(
                   children: [
-                    const CircleAvatar(
-                      radius: 28,
-                      backgroundImage: AssetImage('assets/perfil_analu.png'),
-                    ),
+                    // ⭐ ALTERAÇÃO: ProfileButton no lugar do Avatar estático
+                    const ProfileButton(), 
                     const SizedBox(width: 15),
                     Expanded(
                       child: Column(

@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Adicionado
+import 'package:meu_primeiro_app/widgets/auth_check.dart'; // Adicionado
 
 // -----------------------------------------------------
 // 2. TELA DE BOAS-VINDAS (WIDGET COMPLETO)
 // -----------------------------------------------------
 
-class WelcomeScreen extends StatelessWidget {
-  const WelcomeScreen({super.key});
+class BoasVindasTela extends StatelessWidget { // Renomeado para seguir o padrão do main.dart
+  const BoasVindasTela({super.key});
 
-  void _iniciar(BuildContext context) {
-    // CORREÇÃO: Mude de '/inicio' para '/principal'
-    Navigator.pushReplacementNamed(context, '/principal'); 
-}
+  // Função para salvar o estado e navegar para o AuthCheck
+  void _iniciar(BuildContext context) async {
+    // 1. Salva a flag de que a tela de boas-vindas já foi vista
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasSeenWelcome', true);
+    
+    // 2. Navega para o AuthCheck, que decidirá se o usuário vai para
+    //    o Login (se deslogado) ou para a Tela Principal (se logado).
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => AuthCheck()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {

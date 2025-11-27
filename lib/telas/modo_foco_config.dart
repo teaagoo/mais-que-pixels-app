@@ -10,6 +10,7 @@ import 'tela_principal.dart';
 
 // ⭐ IMPORTAÇÃO DO MENU GLOBAL
 import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart'; // NOVO: Import do ProfileButton
 
 class ModoFocoConfigTela extends StatefulWidget {
   const ModoFocoConfigTela({Key? key}) : super(key: key);
@@ -149,23 +150,18 @@ class _ModoFocoConfigTelaState extends State<ModoFocoConfigTela> {
         stream: doc.snapshots(),
         builder: (context, snapshot) {
           String nome = "Olá!";
-          int pontos = 0;
 
           if (snapshot.hasData) {
             final data = snapshot.data!.data() as Map?;
             if (data != null) {
               nome = "Olá, ${data['nome'].split(' ').first}!";
-              pontos = data['pontos'] ?? 0;
             }
           }
 
           return Row(
             children: [
-              const CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, color: Colors.black),
-              ),
+              // ⭐ ALTERAÇÃO: ProfileButton no lugar do Avatar estático
+              const ProfileButton(),
               const SizedBox(width: 10),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

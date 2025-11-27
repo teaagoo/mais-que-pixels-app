@@ -11,6 +11,7 @@ import 'package:meu_primeiro_app/services/user_data_service.dart';
 
 import 'package:meu_primeiro_app/models/usuarios.dart';
 import 'tela_principal.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart'; // NOVO: Import do ProfileButton
 
 // ------------------------------------------------------------
 // TELA ESTATÍSTICAS
@@ -160,10 +161,9 @@ class _TelaEstatisticasState extends State<TelaEstatisticas>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 24,
-                    backgroundImage: AssetImage('assets/perfil_analu.png'),
-                  ),
+                  
+                  // ⭐ ALTERAÇÃO: ProfileButton no lugar do Avatar estático
+                  const ProfileButton(), 
                   const SizedBox(width: 12),
 
                   // Olá + Nome

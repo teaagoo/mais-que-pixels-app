@@ -1,4 +1,4 @@
-// lib/telas/tela_historico.dart
+// lib/telas/tela_historico.dart (CÓDIGO COMPLETO PARA SUBSTITUIÇÃO)
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +10,7 @@ import 'package:meu_primeiro_app/models/usuarios.dart';
 
 // Widgets / telas
 import 'package:meu_primeiro_app/widgets/main_bottom_nav.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart';
 
 class TelaHistorico extends StatefulWidget {
   const TelaHistorico({Key? key}) : super(key: key);
@@ -51,63 +52,61 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                     child: StreamBuilder<Usuario?>(
                       stream: userDataService.getUserStream(uid),
                       builder: (context, snapUser) {
-                        if (!snapUser.hasData) {
-                          return Row(
-                            children: [
-                              const CircleAvatar(radius: 25, backgroundImage: AssetImage('assets/perfil_analu.png')),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: const [
-                                  Text('Olá!', style: TextStyle(fontFamily: 'MochiyPopOne', fontSize: 20)),
-                                  SizedBox(height: 4),
-                                  Text('Vamos viver algo novo hoje?', style: TextStyle(fontSize: 13, color: Colors.black54)),
-                                ],
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-                                child: Row(children: const [Icon(Icons.emoji_events, size: 18, color: Colors.amber), SizedBox(width: 6), Text('...', style: TextStyle(fontWeight: FontWeight.bold))]),
-                              )
-                            ],
-                          );
+                        // Variáveis de fallback para o caso de carregamento
+                        String nomeDisplay = 'Olá!';
+                        String pontosDisplay = '...';
+
+                        if (snapUser.hasData && snapUser.data != null) {
+                          final usuario = snapUser.data!;
+                          // Usamos o nome formatado e os pontos reais
+                          nomeDisplay = 'Olá, ${usuario.nome.split(' ').first}';
+                          pontosDisplay = '${usuario.pontos} pts'; // Mudei para 'pts' para economizar espaço
                         }
-
-                        final usuario = snapUser.data!;
-
+                        
+                        // --- LAYOUT DO CABEÇALHO ---
                         return Row(
+                          crossAxisAlignment: CrossAxisAlignment.center, // Alinha itens verticalmente
                           children: [
-                            CircleAvatar(
-                              radius: 25,
-                              backgroundColor: Colors.grey[300],
-                              backgroundImage: usuario.photoUrl != null ? NetworkImage(usuario.photoUrl!) : null,
-                            ),
+                            // Elemento 1: Profile Button (Agora sem padding extra)
+                            const ProfileButton(), 
 
                             const SizedBox(width: 12),
-
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Olá, ${usuario.nome.split(' ').first}',
-                                  style: const TextStyle(fontFamily: 'MochiyPopOne', fontSize: 20, color: Colors.black87),
-                                ),
-                                const SizedBox(height: 4),
-                                const Text('Vamos viver algo novo hoje?', style: TextStyle(fontSize: 13, color: Colors.black54)),
-                              ],
+                            
+                            // Elemento 2: Nome e Saudação (Expanded para prevenir Overflow)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    nomeDisplay,
+                                    style: const TextStyle(
+                                      fontFamily: 'MochiyPopOne', 
+                                      fontSize: 20, 
+                                      color: Colors.black87
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Vamos viver algo novo hoje?', 
+                                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
                             ),
 
-                            const Spacer(),
+                            const SizedBox(width: 8), // Pequeno espaço entre o nome e os pontos
 
+                            // Elemento 3: Container de Pontos (Mais compacto)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Diminui o padding horizontal
                               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
                               child: Row(
                                 children: [
                                   const Icon(Icons.emoji_events, size: 18, color: Colors.amber),
-                                  const SizedBox(width: 6),
-                                  Text('${usuario.pontos} pontos', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  const SizedBox(width: 4), // Diminui o espaço
+                                  Text(pontosDisplay, style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ],
                               ),
                             ),
@@ -183,6 +182,16 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                           itemBuilder: (context, index) {
                             final item = lista[index];
 
+                            final title = item['titulo'] ?? item['descricao'] ?? 'Missão Sem Título';
+                            
+                            // Lógica de formatação de data
+                            String formattedDate = item['data'] is String 
+                                ? item['data'] 
+                                : (item['data'] != null && item['data'].runtimeType.toString().contains('Timestamp'))
+                                    ? (item['data'] as dynamic).toDate().toString().split(' ')[0] 
+                                    : 'Sem Data';
+
+
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 14),
                               child: Container(
@@ -195,15 +204,15 @@ class _TelaHistoricoState extends State<TelaHistorico> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(item['data'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                    Text(formattedDate, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                                     const SizedBox(height: 6),
-                                    Text(item['descricao'] ?? '', style: const TextStyle(fontSize: 15, color: Colors.black87)),
+                                    Text(title, style: const TextStyle(fontSize: 15, color: Colors.black87)),
                                     const SizedBox(height: 10),
                                     Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Row(children: [const Icon(Icons.local_florist, color: Color(0xFF8BB58A)), const SizedBox(width: 6), Text(item['categoria'] ?? '')]),
-                                        Text('+${item['pontos'] ?? 0} pts', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF8BB58A))),
+                                        Text('+${item['pontosGanhos'] ?? 0} pts', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF8BB58A))),
                                       ],
                                     ),
                                   ],

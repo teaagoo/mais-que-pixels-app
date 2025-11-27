@@ -1,9 +1,11 @@
+// lib/telas/detalhe_conquista_tela.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:meu_primeiro_app/models/conquista.dart';
 import 'package:meu_primeiro_app/models/usuarios.dart';
 import 'package:meu_primeiro_app/services/auth_services.dart';
 import 'package:meu_primeiro_app/services/user_data_service.dart';
+import 'package:meu_primeiro_app/widgets/profile_button.dart'; // NOVO: Import do ProfileButton
 
 class DetalheConquistaTela extends StatelessWidget {
   final Conquista conquista;
@@ -167,10 +169,8 @@ class DetalheConquistaTela extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              const CircleAvatar(
-                radius: 28,
-                backgroundImage: AssetImage('assets/perfil_analu.png'),
-              ),
+              // ⭐ ALTERAÇÃO: ProfileButton no lugar do Avatar estático
+              const ProfileButton(), 
               const SizedBox(width: 15),
               Expanded(
                 child: Column(
